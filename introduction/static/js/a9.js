@@ -1,4 +1,14 @@
 // console.log("imported a9.js");
+// Add this function to escape potentially dangerous HTML characters
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 
 event1 = function(){
     document.getElementById("a9_b1").style.display = 'none';
@@ -11,18 +21,18 @@ event2 = function(){
 }
 
 event3 = function(){
-    var log_code = document.getElementById('a9_log').value
-    var target_code = document.getElementById('a9_api').value
+    const log_code = escapeHtml(document.getElementById('a9_log').value);  // Sanitizing input to prevent XSS
+    const target_code = escapeHtml(document.getElementById('a9_api').value);  // Sanitizing input to prevent XSS
 
-    var myHeaders = new Headers();
+    const myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
 
-    var formdata = new FormData();
+    const formdata = new FormData();
     formdata.append("csrfmiddlewaretoken", "5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd");
     formdata.append("log_code", log_code);
     formdata.append("api_code", target_code);
 
-    var requestOptions = {
+    const requestOptions = {
     method: 'POST',
     headers: myHeaders,
     body: formdata,
@@ -35,9 +45,9 @@ event3 = function(){
         let data = JSON.parse(result);  // parse JSON string into object
         console.log(data.logs);
         document.getElementById("a9_d3").style.display = 'flex';
-        for (var i = 0; i < data.logs.length; i++) {
+        for (let i = 0; i < data.logs.length; i++) {
             var li = document.createElement("li");
-            li.innerHTML = data.logs[i];
+            li.textContent = data.logs[i];
             document.getElementById("a9_d3").appendChild(li);
         }
     })
