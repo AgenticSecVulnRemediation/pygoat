@@ -1,6 +1,7 @@
 import datetime
 import re
 import subprocess
+import logging
 from hashlib import md5
 
 import jwt
@@ -230,15 +231,21 @@ def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
 def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return process.communicate()
+    try:
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        return result.stdout, result.stderr
+    except Exception as e:
+        logging.error("Error executing command {}: {}".format(command, e))
+        return b'', str(e).encode()
     
 
 @csrf_exempt
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
-        command = "nmap " + ip 
+        if not re.match(r'^((25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.|$)){4}$', ip):
+            return HttpResponseBadRequest("Invalid IP address")
+        command = ['nmap', ip] 
         res, err = command_out(command)
         res = res.decode()
         err = err.decode()
