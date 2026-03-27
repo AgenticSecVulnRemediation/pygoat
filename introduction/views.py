@@ -924,7 +924,11 @@ def ssrf_lab(request):
             try :
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                resolved_filename = os.path.realpath(filename)
+                if not resolved_filename.startswith(os.path.realpath(dirname)):
+                    # TODO: Adjust error handling as necessary
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid path"})
+                file = open(resolved_filename,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
