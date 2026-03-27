@@ -17,7 +17,7 @@
                 localStorage.setItem('theme', newTheme);
                 
                 const themeToggle = document.querySelector('.theme-toggle');
-                themeToggle.innerHTML = newTheme === 'dark' ? '☀️' : '🌙';
+                themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
             });
         }
 
@@ -29,7 +29,7 @@
             requestAnimationFrame(() => {
                 html.setAttribute('data-theme', savedTheme);
                 const themeToggle = document.querySelector('.theme-toggle');
-                themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
+                themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
             });
         });
     </script></body>
