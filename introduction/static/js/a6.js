@@ -1,9 +1,10 @@
 event5 = function(){
     var code = document.getElementById('a6_t1').value
+    var sanitizedCode = DOMPurify.sanitize(code);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
-    formdata.append("code", code);
+    formdata.append("code", sanitizedCode);
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
@@ -23,10 +24,11 @@ event5 = function(){
 
 event6 = function(){
     var code = document.getElementById('a6_t1').value
+    var sanitizedCode = DOMPurify.sanitize(code);  // Ensure DOMPurify is loaded (e.g., via <script src='https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js'></script> in your HTML)
     var myHeaders = new Headers();
     var formdata = new FormData();
 
-    formdata.append("code", code);
+    formdata.append("code", sanitizedCode);
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
