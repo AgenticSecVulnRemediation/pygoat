@@ -923,9 +923,13 @@ def ssrf_lab(request):
             file=request.POST["blog"]
             try :
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                base_dir = os.path.realpath(dirname)
+                temp_path = os.path.join(base_dir, file)
+                filename = os.path.realpath(temp_path)
+                if not filename.startswith(base_dir + os.sep):
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path detected"})
+                with open(filename, "r") as f:
+                    data = f.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
