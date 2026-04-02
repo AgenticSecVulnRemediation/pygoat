@@ -34,11 +34,13 @@ event3 = function(){
     .then(result => {
         let data = JSON.parse(result);  // parse JSON string into object
         console.log(data.logs);
-        document.getElementById("a9_d3").style.display = 'flex';
-        for (var i = 0; i < data.logs.length; i++) {
-            var li = document.createElement("li");
-            li.innerHTML = data.logs[i];
-            document.getElementById("a9_d3").appendChild(li);
+         const logsContainer = document.getElementById("a9_d3");
+        logsContainer.style.display = 'flex';
+    logsContainer.textContent = "";
+        for (let i = 0; i < data.logs.length; i++) {
+            const li = document.createElement("li");
+            li.textContent = data.logs[i];
+            logsContainer.appendChild(li);
         }
     })
     .catch(error => console.log('error', error));
