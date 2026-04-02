@@ -1,77 +1,73 @@
-import ast
-import types
+import importlib.util
 from pathlib import Path
 
 
-def _extract_top_level_nodes(source: str, names: set[str]) -> str:
-    """
-    Extracts top-level assignments/if blocks that define the requested names.
-    This avoids executing unrelated imports (e.g., Django) in settings.py.
-    """
-    tree = ast.parse(source)
-    selected = []
-
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id in names:
-                    selected.append(node)
-                    break
-        elif isinstance(node, ast.If):
-            # Include the if-block if it assigns any requested names in either branch
-            def assigns_requested(stmts):
-                for st in stmts:
-                    if isinstance(st, ast.Assign):
-                        for t in st.targets:
-                            if isinstance(t, ast.Name) and t.id in names:
-                                return True
-                return False
-
-            if assigns_requested(node.body) or assigns_requested(node.orelse):
-                selected.append(node)
-
-    mod = ast.Module(body=selected, type_ignores=[])
-    return ast.unparse(mod) + "\n"
-
-
-def _exec_settings_snippet(source: str, module_name: str):
-    module = types.ModuleType(module_name)
-    module.__file__ = module_name + ".py"
-    exec(compile(source, module.__file__, "exec"), module.__dict__)
+def _import_module_from_path(module_name: str, file_path: Path):
+    spec = importlib.util.spec_from_file_location(module_name, str(file_path))
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
     return module
 
 
-def test_settings_sets_secure_cookies_false_when_debug_true():
-    # Arrange
-    settings_path = Path("dockerized_labs/sensitive_data_exposure/sensitive_data_lab/settings.py")
-    full_source = settings_path.read_text(encoding="utf-8")
-    snippet = _extract_top_level_nodes(
-        full_source,
-        {"DEBUG", "SESSION_COOKIE_SECURE", "CSRF_COOKIE_SECURE"},
+def _exec_settings_with_debug_overridden(settings_path: Path, debug_value: bool):
+    """Execute settings.py in an isolated module namespace with DEBUG overridden.
+
+    This avoids relying on Django settings machinery and allows testing both branches
+    of the DEBUG conditional added by the security fix.
+    """
+    source = settings_path.read_text(encoding="utf-8")
+
+    # Replace the first occurrence of "DEBUG = ..." with the desired value.
+    # This is intentionally narrow to target the exact assignment in the file.
+    needle = "DEBUG = True"
+    replacement = f"DEBUG = {str(debug_value)}"
+    if needle in source:
+        source = source.replace(needle, replacement, 1)
+    else:
+        # Fallback: handle if DEBUG is set differently but still as a simple assignment.
+        import re
+
+        source, n = re.subn(r"^DEBUG\s*=\s*.*$", replacement, source, count=1, flags=re.MULTILINE)
+        assert n == 1, "Could not override DEBUG assignment in settings.py"
+
+    module_name = f"sensitive_data_lab_settings_debug_{'false' if not debug_value else 'true'}"
+    spec = importlib.util.spec_from_loader(module_name, loader=None)
+    module = importlib.util.module_from_spec(spec)
+    module.__file__ = str(settings_path)
+    exec(compile(source, str(settings_path), "exec"), module.__dict__)
+    return module
+
+
+def test_settings_secure_cookie_flags_follow_debug_flag_debug_true_branch():
+    settings_path = (
+        Path(__file__).resolve().parents[1]
+        / "dockerized_labs"
+        / "sensitive_data_exposure"
+        / "sensitive_data_lab"
+        / "settings.py"
     )
 
-    # Act
-    settings = _exec_settings_snippet(snippet, module_name="settings_snippet_debug_true")
+    settings = _import_module_from_path("sensitive_data_lab_settings_under_test", settings_path)
 
-    # Assert
+    # Delta behavior: when DEBUG is True, secure flags must be explicitly False.
     assert settings.DEBUG is True
     assert settings.SESSION_COOKIE_SECURE is False
     assert settings.CSRF_COOKIE_SECURE is False
 
 
-def test_settings_sets_secure_cookies_true_when_debug_false():
-    # Arrange
-    settings_path = Path("dockerized_labs/sensitive_data_exposure/sensitive_data_lab/settings.py")
-    full_source = settings_path.read_text(encoding="utf-8")
-    snippet = _extract_top_level_nodes(
-        full_source,
-        {"DEBUG", "SESSION_COOKIE_SECURE", "CSRF_COOKIE_SECURE"},
-    ).replace("DEBUG = True", "DEBUG = False", 1)
+def test_settings_secure_cookie_flags_follow_debug_flag_debug_false_branch():
+    settings_path = (
+        Path(__file__).resolve().parents[1]
+        / "dockerized_labs"
+        / "sensitive_data_exposure"
+        / "sensitive_data_lab"
+        / "settings.py"
+    )
 
-    # Act
-    settings = _exec_settings_snippet(snippet, module_name="settings_snippet_debug_false")
+    settings = _exec_settings_with_debug_overridden(settings_path, debug_value=False)
 
-    # Assert
+    # Security fix: in production (DEBUG=False), secure cookie flags must be enabled.
     assert settings.DEBUG is False
     assert settings.SESSION_COOKIE_SECURE is True
     assert settings.CSRF_COOKIE_SECURE is True
