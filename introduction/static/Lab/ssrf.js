@@ -1,4 +1,16 @@
 
+/*
+ * Helper function to escape HTML special characters to prevent XSS attacks
+ */
+function escapeHtml(unsafe) {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+}
+
 function frame1to2(){
     // frame 1 to 2
     document.getElementById('ssrf-frame-1').style.display = 'none';
@@ -58,10 +70,11 @@ function frame3to4(){
 function checkcode(){
     var python_code = document.getElementById('python').value
     var html_code = document.getElementById('html').value
+    var safe_html_code = escapeHtml(html_code)
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
-    formdata.append('html_code', html_code);
+    formdata.append('html_code', safe_html_code);
     var requestOptions = {
         method: 'POST',
         body: formdata,
