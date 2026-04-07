@@ -10,6 +10,7 @@ import re
 import string
 import subprocess
 import uuid
+import django.utils.html
 from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
@@ -113,7 +114,7 @@ def xss_lab2(request):
         else:
             username = "Guest"
         context = {
-        'username': username
+        'username': django.utils.html.escape(username)
                 }
         return render(request, 'Lab/XSS/xss_lab_2.html', context)
     else:
