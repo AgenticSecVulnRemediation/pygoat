@@ -1,5 +1,16 @@
+// Utility function to escape HTML characters to prevent XSS.
+// Developers should consider using a more robust library (e.g., DOMPurify) if needed.
+function escapeHtml(str) {
+    if (!str) return str;
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    var code = escapeHtml(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
@@ -22,7 +33,7 @@ event5 = function(){
 }
 
 event6 = function(){
-    var code = document.getElementById('a6_t1').value
+    var code = escapeHtml(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
