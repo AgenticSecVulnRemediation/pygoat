@@ -1,5 +1,15 @@
+// Sanitizes input by escaping HTML special characters.
+function sanitizeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    var code = sanitizeHTML(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
