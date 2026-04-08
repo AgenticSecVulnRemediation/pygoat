@@ -922,10 +922,14 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                base_dir = os.path.realpath(os.path.dirname(__file__))  # Canonicalize base directory
+                joined_path = os.path.join(base_dir, file)              # Join user provided file with base directory
+                real_path = os.path.realpath(joined_path)               # Canonicalize the resultant file path
+                # Validate that the resolved path is within the base directory. Replace placeholder values if needed.
+                if not real_path.startswith(base_dir + os.sep):
+                    raise ValueError('Invalid file path provided')
+                with open(real_path, "r") as f:
+                    data = f.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
