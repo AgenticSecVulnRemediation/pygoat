@@ -71,9 +71,19 @@ function checkcode(){
     fetch("api/ssrf", requestOptions)
     .then(response => response.text())
     .then((result) => {
+        // SECURITY: Ensure that any use of untrusted data (such as 'obj.message') is not inserted into the DOM using innerHTML.
+        // Instead, use textContent or a proper output encoding function when rendering to HTML.
+        // Also, review server-side handling of 'python' and 'html' fields to ensure output encoding and validation are appropriately applied.
         console.log(result);
         var obj = JSON.parse(result);
+        var messageElem = document.getElementById('ssrf-message');
+    if (messageElem) {
+        // Use textContent to safely render untrusted content
+        messageElem.textContent = obj.message;
+    } else {
+        // Fallback to alert if dedicated element is not present
         alert(obj.message);
+    }
         if (obj.passed == 1 ){
             document.getElementById('ssrf-frame-4').style.display = 'none';
             document.getElementById('ssrf-bar-status3').classList.add('ssrf-bar-status')
