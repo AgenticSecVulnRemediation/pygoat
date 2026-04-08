@@ -37,7 +37,7 @@ event3 = function(){
         document.getElementById("a9_d3").style.display = 'flex';
         for (var i = 0; i < data.logs.length; i++) {
             var li = document.createElement("li");
-            li.innerHTML = data.logs[i];
+            li.textContent = data.logs[i]; // Developer Note: Ensure that only text data is inserted. If HTML is required, use a proper sanitization library.
             document.getElementById("a9_d3").appendChild(li);
         }
     })
