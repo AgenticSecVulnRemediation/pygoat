@@ -56,12 +56,14 @@ function frame3to4(){
 
 
 function checkcode(){
-    var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
-
+    var python_code = document.getElementById('python').value;
+    var html_code = document.getElementById('html').value;
+    // Sanitize user inputs using DOMPurify. Ensure you have included <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.10/purify.min.js"></script> in your HTML head.
+    var sanitized_python_code = DOMPurify.sanitize(python_code);
+    var sanitized_html_code = DOMPurify.sanitize(html_code);
     var formdata = new FormData();
-    formdata.append('python_code', python_code);
-    formdata.append('html_code', html_code);
+    formdata.append('python_code', sanitized_python_code);
+    formdata.append('html_code', sanitized_html_code);
     var requestOptions = {
         method: 'POST',
         body: formdata,
