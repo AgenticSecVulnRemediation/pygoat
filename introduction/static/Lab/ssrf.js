@@ -1,4 +1,19 @@
 
+// Utility function to escape HTML special characters
+function sanitize(input) {
+    return input.replace(/[&<>'"\/]/g, function(c) {
+        switch (c) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            case '/': return '&#x2F;';
+            default: return c;
+        }
+    });
+}
+
 function frame1to2(){
     // frame 1 to 2
     document.getElementById('ssrf-frame-1').style.display = 'none';
@@ -56,8 +71,8 @@ function frame3to4(){
 
 
 function checkcode(){
-    var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var python_code = sanitize(document.getElementById('python').value);
+    var html_code = sanitize(document.getElementById('html').value);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
