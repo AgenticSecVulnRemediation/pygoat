@@ -4,23 +4,23 @@ import pytest
 import introduction.views as views
 
 
-def test_xxe_parse_disables_external_general_entities(mocker):
+def test_xxe_parse_disables_external_general_entities_without_executing_xml_parse(mocker):
     # Arrange
     parser = mocker.Mock()
-    make_parser_mock = mocker.patch.object(views, 'make_parser', return_value=parser)
+    mocker.patch.object(views, 'make_parser', return_value=parser)
 
-    # parseString returns an iterable; keep it empty so function doesn't depend on XML parsing here
-    mocker.patch.object(views, 'parseString', return_value=[])
+    # Stop execution immediately after the security-relevant call.
+    def _set_feature_side_effect(*args, **kwargs):
+        raise RuntimeError('stop-after-setFeature')
+
+    parser.setFeature.side_effect = _set_feature_side_effect
 
     request = mocker.Mock()
     request.body = b'<root></root>'
 
     # Act
-    with pytest.raises(UnboundLocalError):
-        # Function expects to find <text> element and will reference 'text' otherwise.
-        # We only assert the security-relevant behavior: feature_external_ges is set to False.
+    with pytest.raises(RuntimeError, match='stop-after-setFeature'):
         views.xxe_parse(request)
 
     # Assert
-    make_parser_mock.assert_called_once()
     parser.setFeature.assert_called_once_with(views.feature_external_ges, False)
