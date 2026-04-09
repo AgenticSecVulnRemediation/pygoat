@@ -921,6 +921,9 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
+            if '..' in file or os.path.isabs(file):
+                # TODO: Replace with appropriate error handling/logging
+                raise ValueError('Invalid file path provided')
             try :
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, file)
