@@ -923,7 +923,13 @@ def ssrf_lab(request):
             file=request.POST["blog"]
             try :
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
+                # Normalize the input file path to eliminate any path traversal attempts
+                normalized_path = os.path.normpath(os.path.join(dirname, file))
+                # Verify that the normalized path starts with the allowed base directory
+                allowed_path = os.path.abspath(dirname)
+                if not os.path.abspath(normalized_path).startswith(allowed_path):
+                    raise ValueError('Invalid file path; access denied.')
+                filename = normalized_path
                 file = open(filename,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
