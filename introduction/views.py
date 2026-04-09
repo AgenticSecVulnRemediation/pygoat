@@ -15,8 +15,9 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+from defusedxml.sax import make_parser
+# Ensure that 'defusedxml' is added to the project's dependency list (e.g., requirements.txt) if not already present
+
 
 import jwt
 import requests
