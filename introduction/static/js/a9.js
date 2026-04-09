@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 // console.log("imported a9.js");
 
 event1 = function(){
@@ -13,14 +14,16 @@ event2 = function(){
 event3 = function(){
     var log_code = document.getElementById('a9_log').value
     var target_code = document.getElementById('a9_api').value
-
+    // Sanitize user input to prevent XSS
+    var sanitized_log_code = DOMPurify.sanitize(log_code);
+    var sanitized_target_code = DOMPurify.sanitize(target_code);
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
 
     var formdata = new FormData();
     formdata.append("csrfmiddlewaretoken", "5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd");
-    formdata.append("log_code", log_code);
-    formdata.append("api_code", target_code);
+    formdata.append("log_code", sanitized_log_code);
+    formdata.append("api_code", sanitized_target_code);
 
     var requestOptions = {
     method: 'POST',
