@@ -1,4 +1,13 @@
 
+// Helper function to sanitize HTML input
+function sanitizeHTML(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+// Developer should review and adjust the sanitization rules as needed.
 function frame1to2(){
     // frame 1 to 2
     document.getElementById('ssrf-frame-1').style.display = 'none';
@@ -57,7 +66,7 @@ function frame3to4(){
 
 function checkcode(){
     var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var html_code = sanitizeHTML(document.getElementById('html').value)
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
