@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 # Assumption: module import path is introduction.views
