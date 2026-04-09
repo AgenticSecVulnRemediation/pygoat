@@ -1,5 +1,16 @@
 // console.log("imported a9.js");
 
+// Sanitizes a string to prevent XSS by escaping special characters
+function sanitizeInput(input) {
+    // NOTE: Replace this with a more robust sanitization library if available
+    return input.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+}
+
+
 event1 = function(){
     document.getElementById("a9_b1").style.display = 'none';
     document.getElementById("a9_d1").style.display = 'flex';
@@ -11,16 +22,18 @@ event2 = function(){
 }
 
 event3 = function(){
-    var log_code = document.getElementById('a9_log').value
-    var target_code = document.getElementById('a9_api').value
+    var log_code = document.getElementById('a9_log').value;
+    var target_code = document.getElementById('a9_api').value;
+    var sanitized_log_code = sanitizeInput(log_code);  // sanitize log code input
+    var sanitized_api_code = sanitizeInput(target_code);  // sanitize API code input
 
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
 
     var formdata = new FormData();
     formdata.append("csrfmiddlewaretoken", "5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd");
-    formdata.append("log_code", log_code);
-    formdata.append("api_code", target_code);
+    formdata.append("log_code", sanitized_log_code);
+    formdata.append("api_code", sanitized_api_code);
 
     var requestOptions = {
     method: 'POST',
