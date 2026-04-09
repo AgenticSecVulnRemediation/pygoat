@@ -1,3 +1,7 @@
+// NOTE: This repo has multiple PRs touching introduction/static/Lab/ssrf.js.
+// It is intentional that different PRs may each add a test file with the same path (test/ssrf.test.js)
+// because they land on different branches/PRs.
+
 describe('ssrf.js sanitizeHTML', () => {
   test('escapes HTML special characters before sending', () => {
     // Arrange
