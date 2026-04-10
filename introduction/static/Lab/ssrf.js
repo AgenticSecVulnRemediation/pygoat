@@ -1,4 +1,14 @@
 
+// New helper function for XSS prevention. Replace or enhance as needed.
+function sanitize(input) {
+    return input.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;')
+                .replace(/\//g, '&#x2F;');
+}
+
 function frame1to2(){
     // frame 1 to 2
     document.getElementById('ssrf-frame-1').style.display = 'none';
@@ -56,8 +66,8 @@ function frame3to4(){
 
 
 function checkcode(){
-    var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var python_code = sanitize(document.getElementById('python').value);  // Sanitizing user input
+    var html_code = sanitize(document.getElementById('html').value);       // Sanitizing user input
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
