@@ -7,6 +7,12 @@
 </head>
 <body><button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>{% block content %}{% endblock %}
 <script>
+        // Add this function to sanitize the theme value
+        function sanitizeTheme(theme) {
+            // Allow only 'light' or 'dark', default to 'light' if invalid
+            return (theme === 'dark' || theme === 'light') ? theme : 'light';
+        }
+
         function toggleTheme() {
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
@@ -23,7 +29,8 @@
 
         // Set theme on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            var rawTheme = localStorage.getItem('theme');
+            const savedTheme = sanitizeTheme(rawTheme);
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
