@@ -1,9 +1,13 @@
+// Ensure DOMPurify is loaded: include via <script src='https://cdn.jsdelivr.net/npm/dompurify@2.0.17/dist/purify.min.js'></script>
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+
+    const code = document.getElementById('a6_t1').value;
+    const sanitizedCode = DOMPurify.sanitize(code); // Ensure DOMPurify is loaded in HTML
     var myHeaders = new Headers();
     var formdata = new FormData();
 
-    formdata.append("code", code);
+    formdata.append("code", sanitizedCode);
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
@@ -22,11 +26,12 @@ event5 = function(){
 }
 
 event6 = function(){
-    var code = document.getElementById('a6_t1').value
+    const code = document.getElementById('a6_t1').value;
+    const sanitizedCode = DOMPurify.sanitize(code); // Ensure DOMPurify is loaded in HTML
     var myHeaders = new Headers();
     var formdata = new FormData();
 
-    formdata.append("code", code);
+    formdata.append("code", sanitizedCode);
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
