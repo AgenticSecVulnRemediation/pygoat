@@ -39,12 +39,13 @@ event6 = function(){
         let data = JSON.parse(result);  // parse JSON string into object
         console.log(data.vulns);
         document.getElementById("a6_d5").style.display = 'flex';
-        // document.getElementById("a6_d5").innerText =  data.vulns;
+         // Using textContent to safely insert untrusted data. If HTML formatting is needed, use DOMPurify.sanitize.
+
 
         for (var i = 0; i < data.vulns.length; i++) {
             var vuln = data.vulns[i];
             var vuln_div = document.createElement("div");
-            vuln_div.innerText = JSON.stringify(vuln)   ;
+            vuln_div.textContent = JSON.stringify(vuln)   ;
             document.getElementById("a6_d5").appendChild(vuln_div);
         }
         
