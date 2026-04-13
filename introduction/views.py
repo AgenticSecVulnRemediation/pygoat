@@ -20,6 +20,7 @@ from xml.sax.handler import feature_external_ges
 
 import jwt
 import requests
+import urllib.parse
 import yaml
 from argon2 import PasswordHasher
 from django.contrib import messages
@@ -959,6 +960,11 @@ def ssrf_lab2(request):
 
     elif request.method == "POST":
         url = request.POST["url"]
+        # Validate URL to mitigate SSRF risks
+        allowed_hosts = ['example.com', 'api.example.com']
+        parsed_url = urllib.parse.urlparse(url)
+        if parsed_url.scheme not in ['http', 'https'] or parsed_url.hostname not in allowed_hosts:
+            return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid URL"})
         try:
             response = requests.get(url)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
