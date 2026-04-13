@@ -1,5 +1,6 @@
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    // Ensure DOMPurify is loaded in your project (e.g., via a script tag or import)
+    var code = DOMPurify.sanitize(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
@@ -22,7 +23,8 @@ event5 = function(){
 }
 
 event6 = function(){
-    var code = document.getElementById('a6_t1').value
+    // Ensure DOMPurify is loaded in your project (e.g., via a script tag or import)
+   var code = DOMPurify.sanitize(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
