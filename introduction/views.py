@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
+# Reminder: update dependency list (e.g., requirements.txt) to include defusedxml if it is not already present
+from defusedxml.pulldom import START_ELEMENT, parseString
 from xml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
