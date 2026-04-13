@@ -3,6 +3,7 @@ import re
 import subprocess
 from hashlib import md5
 
+import ipaddress
 import jwt
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
@@ -230,7 +231,7 @@ def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
 def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process.communicate()
     
 
@@ -238,7 +239,7 @@ def command_out(command):
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
-        command = "nmap " + ip 
+        command = ["nmap", ip] 
         res, err = command_out(command)
         res = res.decode()
         err = err.decode()
