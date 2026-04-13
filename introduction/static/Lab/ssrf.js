@@ -55,9 +55,19 @@ function frame3to4(){
 }
 
 
+
+// Add this sanitizeInput function to escape HTML special characters
+function sanitizeInput(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+
 function checkcode(){
-    var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    const python_code = sanitizeInput(document.getElementById('python').value);
+    const html_code = sanitizeInput(document.getElementById('html').value);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
