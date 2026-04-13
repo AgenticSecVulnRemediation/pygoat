@@ -7,7 +7,6 @@ import introduction.views as views
 
 
 def test_ssrf_lab_rejects_absolute_path(monkeypatch):
-    # Arrange
     opened = []
 
     def fake_open(*args, **kwargs):
@@ -33,10 +32,8 @@ def test_ssrf_lab_rejects_absolute_path(monkeypatch):
 
     monkeypatch.setattr(views, "render", fake_render)
 
-    # Act
     result = views.ssrf_lab(_Request())
 
-    # Assert
     assert captured["template"] == "Lab/ssrf/ssrf_lab.html"
     assert result["blog"] == "Invalid file path"
     assert opened == []
