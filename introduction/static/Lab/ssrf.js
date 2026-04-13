@@ -54,14 +54,23 @@ function frame3to4(){
     }
 }
 
+// Utility function to escape HTML special characters
+function escapeHTML(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
 
 function checkcode(){
     var python_code = document.getElementById('python').value
     var html_code = document.getElementById('html').value
+    var sanitized_html = escapeHTML(html_code);  // Added sanitization to prevent XSS attacks
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
-    formdata.append('html_code', html_code);
+    formdata.append('html_code', sanitized_html);
     var requestOptions = {
         method: 'POST',
         body: formdata,
