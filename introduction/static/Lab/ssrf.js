@@ -58,10 +58,12 @@ function frame3to4(){
 function checkcode(){
     var python_code = document.getElementById('python').value
     var html_code = document.getElementById('html').value
+    // Ensure DOMPurify is imported in the HTML file: <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.10/purify.min.js"></script>
+    var safe_html_code = DOMPurify.sanitize(html_code);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
-    formdata.append('html_code', html_code);
+    formdata.append('html_code', safe_html_code);
     var requestOptions = {
         method: 'POST',
         body: formdata,
