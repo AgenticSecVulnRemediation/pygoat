@@ -7,7 +7,6 @@ from introduction.playground.ssrf import main
 
 
 def test_ssrf_lab_rejects_path_traversal_and_returns_no_blog_found(monkeypatch):
-    # Arrange
     opened = []
 
     def fake_open(*args, **kwargs):
@@ -16,9 +15,7 @@ def test_ssrf_lab_rejects_path_traversal_and_returns_no_blog_found(monkeypatch):
 
     monkeypatch.setattr(main, "open", fake_open, raising=False)
 
-    # Act
     res = main.ssrf_lab("../secrets.txt")
 
-    # Assert
     assert res == {"blog": "No blog found"}
     assert opened == []
