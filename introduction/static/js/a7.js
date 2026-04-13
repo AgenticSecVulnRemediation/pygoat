@@ -1,11 +1,20 @@
 event4 = function(){
+function sanitizeInput(str) {
+    return str.replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#x27;");
+}
+
     var code = document.getElementById('a7_input').value
+    var sanitizedCode = sanitizeInput(code); // Sanitize user input to prevent XSS
     var myHeaders = new Headers();
     // myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
 
     var formdata = new FormData();
     // formdata.append("csrfmiddlewaretoken", "5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd");
-    formdata.append("code", code);
+    formdata.append("code", sanitizedCode);
 
     var requestOptions = {
     method: 'POST',
