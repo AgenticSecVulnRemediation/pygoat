@@ -6,6 +6,7 @@ cffi==1.15.1
 charset-normalizer==3.0.1
 cryptography==39.0.1
 crispy-bootstrap4==2022.1
+# defusedxml: secure XML parsing; verify version compatibility if upgrading
 defusedxml==0.7.1
 dj-database-url==0.5.0
 Django==4.2
