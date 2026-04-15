@@ -921,6 +921,10 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
+            # Validate the user-supplied path to prevent path traversal
+            if os.path.isabs(file) or '..' in file:
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path specified."})
+
             try :
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, file)
