@@ -20,6 +20,7 @@ from xml.sax.handler import feature_external_ges
 
 import jwt
 import requests
+from urllib.parse import urlparse
 import yaml
 from argon2 import PasswordHasher
 from django.contrib import messages
@@ -28,6 +29,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core import serializers
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
+from django.conf import settings
 from django.template import loader
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
@@ -959,10 +961,16 @@ def ssrf_lab2(request):
 
     elif request.method == "POST":
         url = request.POST["url"]
+        parsed_url = urlparse(url)
+        ALLOWED_HOSTS = getattr(settings, 'ALLOWED_SSRF_HOSTS', ['example.com'])
+        if parsed_url.scheme not in ['http', 'https'] or parsed_url.hostname not in ALLOWED_HOSTS:
+            logging.warning(f"Blocked SSRF attempt with URL: {url}")
+            return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid or unauthorized URL"})
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=5)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
-        except:
+        except Exception as e:
+            logging.error(f"SSRF fetch error: {e}")
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid URL"})
 #--------------------------------------- Server-side template injection --------------------------------------#
 
