@@ -1,5 +1,9 @@
+// Import DOMPurify (ensure it is installed and configured appropriately)
+// import DOMPurify from 'dompurify';
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    var code = document.getElementById('a6_t1').value;
+    code = DOMPurify.sanitize(code);  // Sanitize user input
     var myHeaders = new Headers();
     var formdata = new FormData();
 
