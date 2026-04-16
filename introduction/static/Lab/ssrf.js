@@ -57,7 +57,9 @@ function frame3to4(){
 
 function checkcode(){
     var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    // Ensure DOMPurify library is included in the page (e.g., via a <script> tag referencing the CDN)
+    var rawHtml = document.getElementById('html').value;
+    var html_code = DOMPurify.sanitize(rawHtml);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
