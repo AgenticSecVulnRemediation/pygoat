@@ -47,7 +47,6 @@ describe('a6.js sanitizes code before submitting', () => {
 
     // Assert
     expect(context.DOMPurify.sanitize).toHaveBeenCalledWith(code);
-    // event5 and event6 each append one 'code' entry with sanitized value
     expect(appended.filter(([k]) => k === 'code').map(([, v]) => v)).toEqual([sanitized, sanitized]);
   });
 });
