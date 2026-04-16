@@ -31,6 +31,7 @@ from django.shortcuts import redirect, render
 from django.template import loader
 from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.html import escape
 from PIL import Image, ImageMath
 from requests.structures import CaseInsensitiveDict
 
@@ -1220,7 +1221,8 @@ def software_and_data_integrity_failure(request):
 def software_and_data_integrity_failure_lab2(request):
     if request.method == "GET":
         try:
-            username = request.GET["username"]
+            username = request.GET.get("username", "")
+            username = escape(username)
             return render(request,"Lab_2021/A8_software_and_data_integrity_failure/lab2.html", {"username":username,"success":True})
         except:
             return render(request,"Lab_2021/A8_software_and_data_integrity_failure/lab2.html")
