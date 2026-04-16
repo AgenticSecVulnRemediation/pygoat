@@ -23,7 +23,11 @@
 
         // Set theme on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            let savedTheme = localStorage.getItem('theme');
+            // Validate the theme value to allow only 'light' or 'dark'. Replace with a safe default if necessary.
+            if (savedTheme !== 'dark' && savedTheme !== 'light') {
+                savedTheme = 'light'; // TODO: adjust default if necessary
+            }
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
