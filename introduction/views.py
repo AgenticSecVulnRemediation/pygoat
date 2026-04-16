@@ -420,21 +420,21 @@ def cmd_lab(request):
             domain = re.sub(r'^(?:(https?|ftp)://)?(?:www\.)?', '', domain, flags=re.IGNORECASE)
             os=request.POST.get('os')
             print(os)
-            if(os=='win'):
-                command="nslookup {}".format(domain)
+            # TODO: Validate 'domain' to prevent OS command injection vulnerabilities using a whitelist regex
+            # Validate 'domain' using a whitelist regex (only letters, digits, dots, and hyphens allowed)
+            if not re.match(r'^[a-zA-Z0-9.-]+$', domain):
+                raise ValueError('Invalid domain')
+            if os == 'win':
+                command = ["nslookup", domain]
             else:
-                command = "dig {}".format(domain)
+                command = ["dig", domain]
             
             try:
                 # output=subprocess.check_output(command,shell=True,encoding="UTF-8")
-                process = subprocess.Popen(
-                    command,
-                    shell=True,
-                    stdout=subprocess.PIPE, 
-                    stderr=subprocess.PIPE)
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='UTF-8')
                 stdout, stderr = process.communicate()
-                data = stdout.decode('utf-8')
-                stderr = stderr.decode('utf-8')
+                data = stdout
+                stderr = stderr
                 # res = json.loads(data)
                 # print("Stdout\n" + data)
                 output = data + stderr
