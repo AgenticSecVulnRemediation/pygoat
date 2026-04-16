@@ -1,45 +1,37 @@
-const path = require('path');
+/**
+ * Assumptions:
+ * - Jest test environment uses JSDOM.
+ * - a7.js defines global `event4` function.
+ * - DOMPurify is available globally.
+ */
 
-describe('a7.js DOMPurify usage', () => {
+describe('a7.js event4 - sanitizes code before sending', () => {
   beforeEach(() => {
     jest.resetModules();
-  });
+    document.body.innerHTML = `
+      <input id="a7_input" value="<img src=x onerror=alert(1)>" />
+      <div id="a7_d4"></div>
+    `;
 
-  test('event4 sanitizes user input before sending in FormData', async () => {
-    // Arrange
-    const sanitizeMock = jest.fn((v) => `SANITIZED:${v}`);
-    global.DOMPurify = { sanitize: sanitizeMock };
-
-    const inputEl = { value: '<img src=x onerror=alert(1)>' };
-    const a7d4 = { style: { display: '' }, innerText: '' };
-
-    global.document = {
-      getElementById: jest.fn((id) => {
-        if (id === 'a7_input') return inputEl;
-        if (id === 'a7_d4') return a7d4;
-        throw new Error(`unexpected id ${id}`);
-      }),
-    };
-
-    const appendMock = jest.fn();
-    global.FormData = function FormData() {
-      this.append = appendMock;
-    };
-
-    global.Headers = function Headers() {};
+    global.DOMPurify = { sanitize: jest.fn((v) => `SANITIZED:${v}`) };
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
         text: () => Promise.resolve(JSON.stringify({ message: 'ok' })),
       })
     );
+  });
 
-    // Act
-    require(path.resolve(process.cwd(), 'introduction/static/js/a7.js'));
+  test('uses DOMPurify.sanitize on user input and sends sanitized value in FormData', async () => {
+    const appendSpy = jest.fn();
+    global.FormData = function FormDataMock() {
+      this.append = appendSpy;
+    };
+
+    require('../introduction/static/js/a7.js');
     await global.event4();
 
-    // Assert
-    expect(sanitizeMock).toHaveBeenCalledWith(inputEl.value);
-    expect(appendMock).toHaveBeenCalledWith('code', `SANITIZED:${inputEl.value}`);
+    expect(global.DOMPurify.sanitize).toHaveBeenCalledWith('<img src=x onerror=alert(1)>');
+    expect(appendSpy).toHaveBeenCalledWith('code', 'SANITIZED:<img src=x onerror=alert(1)>');
   });
 });
