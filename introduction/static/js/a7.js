@@ -1,5 +1,10 @@
+// If using modules, add:
+// import DOMPurify from 'dompurify';
+// Or in HTML, include:
+// <script src="path/to/dompurify.min.js"></script>
+
 event4 = function(){
-    var code = document.getElementById('a7_input').value
+    var code = DOMPurify.sanitize(document.getElementById('a7_input').value);
     var myHeaders = new Headers();
     // myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
 
