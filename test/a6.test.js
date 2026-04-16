@@ -1,39 +1,46 @@
-const path = require('path');
+/**
+ * Assumptions:
+ * - Jest test environment uses JSDOM.
+ * - a6.js defines global `event5` and `event6`.
+ * - DOMPurify is available globally.
+ */
 
-describe('a6.js DOMPurify usage', () => {
+describe('a6.js - sanitizes code before sending to API', () => {
   beforeEach(() => {
     jest.resetModules();
+    document.body.innerHTML = `<textarea id="a6_t1"><img src=x onerror=alert(1)></textarea>`;
+
+    global.DOMPurify = { sanitize: jest.fn((v) => `SANITIZED:${v}`) };
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        text: () => Promise.resolve(JSON.stringify({ message: 'success', vulns: [] })),
+      })
+    );
   });
 
-  test('event5 sanitizes code before submitting', async () => {
-    // Arrange
-    global.DOMPurify = { sanitize: jest.fn((v) => `SAN:${v}`) };
-    const inputEl = { value: '<svg onload=alert(1)>' };
-
-    global.document = {
-      getElementById: jest.fn((id) => {
-        if (id === 'a6_t1') return inputEl;
-        if (id === 'a6_d5') return { style: {}, appendChild: jest.fn() };
-        throw new Error(`unexpected id ${id}`);
-      }),
-      createElement: jest.fn(() => ({ innerText: '' })),
+  test('event5 uses DOMPurify.sanitize and sends sanitized code', async () => {
+    const appendSpy = jest.fn();
+    global.FormData = function FormDataMock() {
+      this.append = appendSpy;
     };
 
-    const appendMock = jest.fn();
-    global.FormData = function FormData() {
-      this.append = appendMock;
-    };
-    global.Headers = function Headers() {};
-
-    global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(JSON.stringify({ message: 'success', vulns: [] })) }));
-    global.alert = jest.fn();
-
-    // Act
-    require(path.resolve(process.cwd(), 'introduction/static/js/a6.js'));
+    require('../introduction/static/js/a6.js');
     await global.event5();
 
-    // Assert
-    expect(global.DOMPurify.sanitize).toHaveBeenCalledWith(inputEl.value);
-    expect(appendMock).toHaveBeenCalledWith('code', `SAN:${inputEl.value}`);
+    expect(global.DOMPurify.sanitize).toHaveBeenCalledWith('<img src=x onerror=alert(1)>');
+    expect(appendSpy).toHaveBeenCalledWith('code', 'SANITIZED:<img src=x onerror=alert(1)>');
+  });
+
+  test('event6 uses DOMPurify.sanitize and sends sanitized code', async () => {
+    const appendSpy = jest.fn();
+    global.FormData = function FormDataMock() {
+      this.append = appendSpy;
+    };
+
+    require('../introduction/static/js/a6.js');
+    await global.event6();
+
+    expect(global.DOMPurify.sanitize).toHaveBeenCalledWith('<img src=x onerror=alert(1)>');
+    expect(appendSpy).toHaveBeenCalledWith('code', 'SANITIZED:<img src=x onerror=alert(1)>');
   });
 });
