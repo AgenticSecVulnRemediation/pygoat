@@ -1,5 +1,14 @@
+function sanitizeInput(input) {
+    return input.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;')
+                .replace(/\//g, '&#x2F;');
+}
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    var code = sanitizeInput(document.getElementById('a6_t1').value)
     var myHeaders = new Headers();
     var formdata = new FormData();
 
