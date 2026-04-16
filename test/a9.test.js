@@ -1,44 +1,46 @@
-const path = require('path');
+/**
+ * Assumptions:
+ * - Jest test environment uses JSDOM.
+ * - a9.js defines global `event3` function.
+ */
 
-describe('a9.js log rendering hardening', () => {
+describe('a9.js - renders logs with textContent (prevents DOM XSS)', () => {
   beforeEach(() => {
     jest.resetModules();
-  });
-
-  test('event3 renders logs with textContent (not innerHTML)', async () => {
-    // Arrange
-    const a9d3 = { style: { display: 'none' }, appendChild: jest.fn() };
-
-    global.document = {
-      getElementById: jest.fn((id) => {
-        if (id === 'a9_log' || id === 'a9_api') return { value: 'x' };
-        if (id === 'a9_d3') return a9d3;
-        if (id === 'a9_b1' || id === 'a9_d1' || id === 'a9_b2' || id === 'a9_d2') return { style: {} };
-        throw new Error(`unexpected id ${id}`);
-      }),
-      createElement: jest.fn(() => ({})),
-    };
-
-    global.Headers = function Headers() {
-      this.append = jest.fn();
-    };
-    global.FormData = function FormData() {
-      this.append = jest.fn();
-    };
+    document.body.innerHTML = `
+      <input id="a9_log" value="anything" />
+      <input id="a9_api" value="anything" />
+      <div id="a9_d3"></div>
+    `;
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
-        text: () => Promise.resolve(JSON.stringify({ logs: ['<img src=x onerror=alert(1)>'] })),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({ logs: ['<img src=x onerror=alert(1)>'] })
+          ),
       })
     );
+  });
+
+  test('does not assign logs using innerHTML', async () => {
+    // Arrange
+    const createdElements = [];
+    const origCreateElement = document.createElement.bind(document);
+    jest.spyOn(document, 'createElement').mockImplementation((tag) => {
+      const el = origCreateElement(tag);
+      if (tag === 'li') createdElements.push(el);
+      return el;
+    });
 
     // Act
-    require(path.resolve(process.cwd(), 'introduction/static/js/a9.js'));
+    require('../introduction/static/js/a9.js');
     await global.event3();
 
     // Assert
-    const createdLi = global.document.createElement.mock.results[0].value;
-    expect(createdLi.innerHTML).toBeUndefined();
-    expect(createdLi.textContent).toBe('<img src=x onerror=alert(1)>');
+    expect(createdElements).toHaveLength(1);
+    expect(createdElements[0].textContent).toBe('<img src=x onerror=alert(1)>');
+    // If innerHTML were used, the browser would create an <img> element child.
+    expect(createdElements[0].querySelector('img')).toBeNull();
   });
 });
