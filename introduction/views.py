@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
+from defusedxml.pulldom import START_ELEMENT, parseString
+from defusedxml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
 import jwt
