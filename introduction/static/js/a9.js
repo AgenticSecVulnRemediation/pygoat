@@ -11,8 +11,11 @@ event2 = function(){
 }
 
 event3 = function(){
-    var log_code = document.getElementById('a9_log').value
-    var target_code = document.getElementById('a9_api').value
+    // Ensure DOMPurify is loaded in your project, e.g., include its script in your HTML or import it as a module
+    var raw_log_code = document.getElementById('a9_log').value;
+    var log_code = DOMPurify.sanitize(raw_log_code);
+    var raw_target_code = document.getElementById('a9_api').value;
+    var target_code = DOMPurify.sanitize(raw_target_code);
 
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
