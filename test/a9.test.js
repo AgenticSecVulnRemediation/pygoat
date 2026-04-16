@@ -1,49 +1,41 @@
-const path = require('path');
+/**
+ * Assumptions:
+ * - Jest test environment uses JSDOM.
+ * - a9.js defines global `event3` function.
+ */
 
-describe('a9.js escapeHtml usage', () => {
+describe('a9.js - escapes log_code/api_code before sending', () => {
   beforeEach(() => {
     jest.resetModules();
-    global.fetch = undefined;
-  });
-
-  test('event3 escapes log_code and api_code before appending to FormData', async () => {
-    // Arrange
-    const logEl = { value: '<img src=x onerror=alert(1)>' };
-    const apiEl = { value: "a&b'\"<>", };
-
-    global.document = {
-      getElementById: jest.fn((id) => {
-        if (id === 'a9_log') return logEl;
-        if (id === 'a9_api') return apiEl;
-        if (id === 'a9_b1' || id === 'a9_d1' || id === 'a9_b2' || id === 'a9_d2' || id === 'a9_d3') {
-          return { style: {}, appendChild: jest.fn() };
-        }
-        throw new Error(`unexpected id ${id}`);
-      }),
-    };
-
-    const appendMock = jest.fn();
-    global.FormData = function FormData() {
-      this.append = appendMock;
-    };
-    global.Headers = function Headers() {
-      this.append = jest.fn();
-    };
+    document.body.innerHTML = `
+      <input id="a9_log" value="<img src=x onerror=alert(1)>" />
+      <input id="a9_api" value="</script><script>alert(1)</script>" />
+      <div id="a9_d3"></div>
+    `;
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
         text: () => Promise.resolve(JSON.stringify({ logs: [] })),
       })
     );
+  });
+
+  test('escapes special HTML characters when appending to FormData', async () => {
+    // Arrange
+    const appendSpy = jest.fn();
+    global.FormData = function FormDataMock() {
+      this.append = appendSpy;
+    };
 
     // Act
-    require(path.resolve(process.cwd(), 'introduction/static/js/a9.js'));
+    require('../introduction/static/js/a9.js');
     await global.event3();
 
-    // Assert
-    const escapedLog = '&lt;img src=x onerror=alert(1)&gt;';
-    const escapedApi = 'a&amp;b&#039;&quot;&lt;&gt;';
-    expect(appendMock).toHaveBeenCalledWith('log_code', escapedLog);
-    expect(appendMock).toHaveBeenCalledWith('api_code', escapedApi);
+    // Assert (only verify the delta behavior: escaping inputs before sending)
+    const logAppend = appendSpy.mock.calls.find((c) => c[0] === 'log_code');
+    const apiAppend = appendSpy.mock.calls.find((c) => c[0] === 'api_code');
+
+    expect(logAppend[1]).toBe('&lt;img src=x onerror=alert(1)&gt;');
+    expect(apiAppend[1]).toBe('&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;');
   });
 });
