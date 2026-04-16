@@ -13,14 +13,17 @@ event2 = function(){
 event3 = function(){
     var log_code = document.getElementById('a9_log').value
     var target_code = document.getElementById('a9_api').value
+    // Ensure DOMPurify is included in your project: <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js"></script>
+    var safe_log_code = DOMPurify.sanitize(log_code);
+    var safe_target_code = DOMPurify.sanitize(target_code);
 
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
 
     var formdata = new FormData();
     formdata.append("csrfmiddlewaretoken", "5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd");
-    formdata.append("log_code", log_code);
-    formdata.append("api_code", target_code);
+    formdata.append("log_code", safe_log_code);
+    formdata.append("api_code", safe_target_code);
 
     var requestOptions = {
     method: 'POST',
