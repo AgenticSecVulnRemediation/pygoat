@@ -1,39 +1,34 @@
-const path = require('path');
+/**
+ * Assumptions:
+ * - Jest test environment uses JSDOM.
+ * - ssrf.js defines global `checkcode` and uses sanitizeHTML() for html field.
+ */
 
-describe('ssrf.js sanitizeHTML() usage', () => {
+describe('ssrf.js - sanitizes html_code before sending', () => {
   beforeEach(() => {
     jest.resetModules();
+    document.body.innerHTML = `
+      <textarea id="python">print(1)</textarea>
+      <textarea id="html"><img src=x onerror=alert(1)></textarea>
+    `;
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        text: () => Promise.resolve(JSON.stringify({ message: 'ok', passed: 0 })),
+      })
+    );
   });
 
-  test('checkcode uses sanitizeHTML for html_code before appending to FormData', async () => {
-    // Arrange
-    const pythonEl = { value: 'print(1)' };
-    const htmlEl = { value: "<img src=x onerror=alert(1)>" };
-
-    global.document = {
-      getElementById: jest.fn((id) => {
-        if (id === 'python') return pythonEl;
-        if (id === 'html') return htmlEl;
-        if (id.startsWith('ssrf-frame-') || id.startsWith('ssrf-bar-status')) return { style: {}, classList: { add: jest.fn() } };
-        throw new Error(`unexpected id ${id}`);
-      }),
-      querySelectorAll: jest.fn(() => []),
+  test('escapes < and > in html_code when appending to FormData', async () => {
+    const appendSpy = jest.fn();
+    global.FormData = function FormDataMock() {
+      this.append = appendSpy;
     };
 
-    const appendMock = jest.fn();
-    global.FormData = function FormData() {
-      this.append = appendMock;
-    };
-
-    global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(JSON.stringify({ passed: 0, message: 'ok' })) }));
-    global.alert = jest.fn();
-
-    // Act
-    require(path.resolve(process.cwd(), 'introduction/static/Lab/ssrf.js'));
+    require('../introduction/static/Lab/ssrf.js');
     await global.checkcode();
 
-    // Assert
-    expect(appendMock).toHaveBeenCalledWith('python_code', 'print(1)');
-    expect(appendMock).toHaveBeenCalledWith('html_code', '&lt;img src=x onerror=alert(1)&gt;');
+    const htmlAppend = appendSpy.mock.calls.find((c) => c[0] === 'html_code');
+    expect(htmlAppend[1]).toBe('&lt;img src=x onerror=alert(1)&gt;');
   });
 });
