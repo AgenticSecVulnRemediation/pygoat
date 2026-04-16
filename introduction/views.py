@@ -16,7 +16,7 @@ from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
 from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+import defusedxml.ElementTree as ET
 
 import jwt
 import requests
@@ -254,19 +254,14 @@ def xxe_see(request):
 
 @csrf_exempt
 def xxe_parse(request):
-
-    parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
-    doc = parseString(request.body.decode('utf-8'), parser=parser)
-    for event, node in doc:
-        if event == START_ELEMENT and node.tagName == 'text':
-            doc.expandNode(node)
-            text = node.toxml()
-    startInd = text.find('>')
-    endInd = text.find('<', startInd)
-    text = text[startInd + 1:endInd:]
-    p=comments.objects.filter(id=1).update(comment=text)
-
+    xml_string = request.body.decode('utf-8')
+    try:
+        root = ET.fromstring(xml_string)
+        text_elem = root.find('text')
+        text = "".join(text_elem.itertext()) if text_elem is not None else ""
+    except Exception as e:
+        text = ""
+    comments.objects.filter(id=1).update(comment=text)
     return render(request, 'Lab/XXE/xxe_lab.html')
 
 def auth_home(request):
