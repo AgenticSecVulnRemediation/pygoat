@@ -420,16 +420,16 @@ def cmd_lab(request):
             domain = re.sub(r'^(?:(https?|ftp)://)?(?:www\.)?', '', domain, flags=re.IGNORECASE)
             os=request.POST.get('os')
             print(os)
-            if(os=='win'):
-                command="nslookup {}".format(domain)
+            # TODO: Validate 'os' and 'domain' to ensure they are safe before using in shell command.
+            if os == 'win':
+                command = ['nslookup', domain]  # Ensure 'domain' is properly validated if necessary
             else:
-                command = "dig {}".format(domain)
+                command = ['dig', domain]  # Ensure 'domain' is properly validated if necessary
             
             try:
                 # output=subprocess.check_output(command,shell=True,encoding="UTF-8")
                 process = subprocess.Popen(
                     command,
-                    shell=True,
                     stdout=subprocess.PIPE, 
                     stderr=subprocess.PIPE)
                 stdout, stderr = process.communicate()
