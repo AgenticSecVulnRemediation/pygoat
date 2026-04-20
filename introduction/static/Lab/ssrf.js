@@ -1,4 +1,13 @@
 
+// Sanitize input by escaping HTML special characters
+function sanitizeInput(input) {
+    return input.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+}
+// Developer note: Replace this with a more robust sanitization library (e.g., DOMPurify) if needed.
 function frame1to2(){
     // frame 1 to 2
     document.getElementById('ssrf-frame-1').style.display = 'none';
@@ -56,8 +65,8 @@ function frame3to4(){
 
 
 function checkcode(){
-    var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var python_code = sanitizeInput(document.getElementById('python').value);
+    var html_code = sanitizeInput(document.getElementById('html').value);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
