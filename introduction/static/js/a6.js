@@ -1,5 +1,7 @@
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    var rawCode = document.getElementById('a6_t1').value;
+    // Use DOMPurify to sanitize the input (ensure that DOMPurify library is imported in your HTML file, e.g., <script src='https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.10/purify.min.js'></script>)
+    var code = DOMPurify.sanitize(rawCode);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
