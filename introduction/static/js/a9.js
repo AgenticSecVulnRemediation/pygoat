@@ -1,5 +1,21 @@
 // console.log("imported a9.js");
 
+function sanitize(input) {
+    return input.replace(/[&<>"']/g, function(match) {
+        switch(match) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            default: return match;
+        }
+    });
+}
+
+
+
+
 event1 = function(){
     document.getElementById("a9_b1").style.display = 'none';
     document.getElementById("a9_d1").style.display = 'flex';
@@ -11,8 +27,8 @@ event2 = function(){
 }
 
 event3 = function(){
-    var log_code = document.getElementById('a9_log').value
-    var target_code = document.getElementById('a9_api').value
+    var log_code = sanitize(document.getElementById('a9_log').value)
+    var target_code = sanitize(document.getElementById('a9_api').value)
 
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
