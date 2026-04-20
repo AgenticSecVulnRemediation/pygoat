@@ -37,7 +37,8 @@ event3 = function(){
         document.getElementById("a9_d3").style.display = 'flex';
         for (var i = 0; i < data.logs.length; i++) {
             var li = document.createElement("li");
-            li.innerHTML = data.logs[i];
+            // Using textContent to prevent XSS. If HTML rendering is required, consider using a sanitization library like DOMPurify (import and configure it appropriately).
+            li.textContent = data.logs[i];
             document.getElementById("a9_d3").appendChild(li);
         }
     })
