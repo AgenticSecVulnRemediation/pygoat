@@ -1,5 +1,14 @@
+// Sanitization function to escape HTML special characters
+function sanitizeString(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#x27;');
+}
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    const code = sanitizeString(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
@@ -22,7 +31,7 @@ event5 = function(){
 }
 
 event6 = function(){
-    var code = document.getElementById('a6_t1').value
+    const code = sanitizeString(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
