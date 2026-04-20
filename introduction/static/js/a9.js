@@ -1,4 +1,21 @@
 // console.log("imported a9.js");
+// Helper function to sanitize HTML input
+function sanitizeHTML(input) {
+    // This function escapes characters like <, >, &, ", and '
+    return String(input).replace(/[&<>'"\/]/g, function (s) {
+        var entityMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;'
+        };
+        return entityMap[s];
+    });
+}
+
+// Note: Alternatively, consider using a trusted library like DOMPurify for enhanced security. Replace this function with the library call if available.
 
 event1 = function(){
     document.getElementById("a9_b1").style.display = 'none';
@@ -11,8 +28,8 @@ event2 = function(){
 }
 
 event3 = function(){
-    var log_code = document.getElementById('a9_log').value
-    var target_code = document.getElementById('a9_api').value
+    var log_code = sanitizeHTML(document.getElementById('a9_log').value);
+    var target_code = sanitizeHTML(document.getElementById('a9_api').value);
 
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
