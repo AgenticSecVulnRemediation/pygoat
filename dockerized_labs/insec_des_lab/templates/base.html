@@ -23,11 +23,14 @@
 
         // Set theme on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            let savedTheme = localStorage.getItem('theme');
+            // Only allow predefined themes to prevent XSS (fix: whitelist allowed values)
+            if (savedTheme !== 'dark' && savedTheme !== 'light') {
+                savedTheme = 'light'; // Default value if input is not valid
+            }
             const html = document.documentElement;
-            
             requestAnimationFrame(() => {
-                html.setAttribute('data-theme', savedTheme);
+                html.setAttribute('data-theme', savedTheme);  // Safe assignment after validation
                 const themeToggle = document.querySelector('.theme-toggle');
                 themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
             });
