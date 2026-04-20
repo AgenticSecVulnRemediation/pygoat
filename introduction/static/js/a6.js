@@ -1,5 +1,19 @@
+// Helper function to escape HTML special characters
+function escapeHtml(string) {
+    var entityMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
+    return String(string).replace(/[&<>"']/g, function (s) {
+      return entityMap[s];
+    });
+}
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    var code = escapeHtml(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
