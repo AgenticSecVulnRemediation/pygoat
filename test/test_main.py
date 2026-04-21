@@ -1,23 +1,32 @@
 import os
-import pytest
 
-# Assumption: tests run with project root on PYTHONPATH so `introduction` is importable.
+# Assumption: module path is importable as introduction.playground.ssrf.main
 from introduction.playground.ssrf import main
 
 
-def test_ssrf_lab_blocks_directory_traversal_and_never_opens_file(mocker):
-    open_spy = mocker.patch("builtins.open", autospec=True)
+def test_ssrf_lab_rejects_directory_traversal_and_does_not_open(monkeypatch):
+    # Arrange
+    def fail_open(*args, **kwargs):
+        raise AssertionError("open() must not be called for traversal path")
 
-    result = main.ssrf_lab("../secrets.txt")
+    monkeypatch.setattr(main, "open", fail_open, raising=False)
 
-    assert result == {"blog": "No blog found"}
-    open_spy.assert_not_called()
+    # Act
+    out = main.ssrf_lab("../secrets.txt")
+
+    # Assert
+    assert out == {"blog": "No blog found"}
 
 
-def test_ssrf_lab_blocks_absolute_path_and_never_opens_file(mocker):
-    open_spy = mocker.patch("builtins.open", autospec=True)
+def test_ssrf_lab_rejects_absolute_path_and_does_not_open(monkeypatch):
+    # Arrange
+    def fail_open(*args, **kwargs):
+        raise AssertionError("open() must not be called for absolute path")
 
-    result = main.ssrf_lab(os.path.abspath("/etc/passwd"))
+    monkeypatch.setattr(main, "open", fail_open, raising=False)
 
-    assert result == {"blog": "No blog found"}
-    open_spy.assert_not_called()
+    # Act
+    out = main.ssrf_lab("/etc/passwd")
+
+    # Assert
+    assert out == {"blog": "No blog found"}
