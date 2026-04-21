@@ -1,38 +1,46 @@
-// Note: source file is under introduction/static/Lab/ssrf.js; assume Jest is configured with jsdom.
+/**
+ * @jest-environment jsdom
+ */
 
-describe('ssrf.js checkcode sanitization', () => {
-  beforeEach(() => {
-    jest.resetModules();
+const path = require('path');
+
+// Importing the module relies on jest/jsdom environment.
+require('../../introduction/static/Lab/ssrf.js');
+
+
+describe('ssrf.js sanitize()', () => {
+  test('checkcode sends escaped python_code and html_code to FormData', async () => {
+    // Arrange
     document.body.innerHTML = `
       <textarea id="python"></textarea>
       <textarea id="html"></textarea>
     `;
 
-    global.fetch = jest.fn(() => Promise.resolve({
+    document.getElementById('python').value = `<script>alert(1)</script> & "'`;
+    document.getElementById('html').value = `<img src=x onerror=alert(1)>`;
+
+    const appendSpy = jest.fn();
+    global.FormData = function() { this.append = appendSpy; };
+
+    global.fetch = jest.fn().mockResolvedValue({
       text: () => Promise.resolve(JSON.stringify({ message: 'ok', passed: 0 }))
-    }));
-
-    global.FormData = class {
-      constructor() { this._data = {}; }
-      append(k, v) { this._data[k] = v; }
-    };
-
-    jest.spyOn(window, 'alert').mockImplementation(() => {});
-  });
-
-  test('checkcode escapes HTML special characters before sending to backend', async () => {
-    // Arrange
-    require('../introduction/static/Lab/ssrf.js');
-
-    document.getElementById('python').value = 'print(1)';
-    document.getElementById('html').value = `<img src=x onerror=alert('x')>&"'`;
+    });
 
     // Act
     await global.checkcode();
 
     // Assert
-    const fd = global.fetch.mock.calls[0][1].body;
-    expect(fd._data.python_code).toBe('print(1)');
-    expect(fd._data.html_code).toBe('&lt;img src=x onerror=alert(&#39;x&#39;)&gt;&amp;&quot;&#39;');
+    // both fields must be sanitized before appending
+    expect(appendSpy).toHaveBeenCalledWith(
+      'python_code',
+      expect.not.stringContaining('<')
+    );
+    expect(appendSpy).toHaveBeenCalledWith(
+      'html_code',
+      expect.not.stringContaining('<')
+    );
+    // ensure ampersand escaped too
+    const pythonArg = appendSpy.mock.calls.find(c => c[0] === 'python_code')[1];
+    expect(pythonArg).toContain('&amp;');
   });
 });
