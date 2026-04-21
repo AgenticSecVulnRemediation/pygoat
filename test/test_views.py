@@ -1,52 +1,54 @@
 import types
-from unittest.mock import MagicMock
 
 import pytest
 
-# Assumption: Django app module path is "introduction" and cmd_lab is importable from introduction.views
-from introduction.views import cmd_lab
+# Assumption: module path is importable as introduction.views
+from introduction import views
 
 
-def _make_request(domain: str, os_name: str = "linux"):
+def _make_request(domain, os_value="win"):
+    user = types.SimpleNamespace(is_authenticated=True)
     req = types.SimpleNamespace()
     req.method = "POST"
-    req.user = types.SimpleNamespace(is_authenticated=True)
-    req.POST = {"domain": domain, "os": os_name}
+    req.POST = {"domain": domain, "os": os_value}
+    req.user = user
     return req
 
 
-def test_cmd_lab_rejects_domain_with_shell_metacharacters_before_subprocess(monkeypatch):
-    # Arrange - the new code raises ValueError for invalid domains
-    request = _make_request("example.com;whoami", os_name="linux")
-
-    popen_spy = MagicMock()
-    monkeypatch.setattr("introduction.views.subprocess.Popen", popen_spy)
-
-    # Act / Assert
-    with pytest.raises(ValueError):
-        cmd_lab(request)
-    popen_spy.assert_not_called()
-
-
-def test_cmd_lab_uses_shell_false_and_list_args(monkeypatch):
+def test_cmd_lab_rejects_invalid_domain_before_subprocess(monkeypatch):
     # Arrange
-    request = _make_request("example.com", os_name="win")
+    def fail_popen(*args, **kwargs):
+        raise AssertionError("Popen must not be called for invalid domain")
 
-    proc = MagicMock()
-    proc.communicate.return_value = (b"out", b"")
-
-    popen_spy = MagicMock(return_value=proc)
-    monkeypatch.setattr("introduction.views.subprocess.Popen", popen_spy)
-
-    # Also patch render to avoid template dependency
-    render_spy = MagicMock(return_value="rendered")
-    monkeypatch.setattr("introduction.views.render", render_spy)
+    monkeypatch.setattr(views.subprocess, "Popen", fail_popen)
 
     # Act
-    result = cmd_lab(request)
+    resp = views.cmd_lab(_make_request("example.com;whoami", os_value="win"))
 
     # Assert
-    assert result == "rendered"
-    args, kwargs = popen_spy.call_args
-    assert args[0] == ["nslookup", "example.com"]
-    assert kwargs.get("shell") is False
+    assert "Something went wrong" in str(resp.content)
+
+
+def test_cmd_lab_uses_shell_false_and_list_command(monkeypatch):
+    # Arrange
+    seen = {}
+
+    def fake_popen(cmd, shell, stdout, stderr):
+        seen["cmd"] = cmd
+        seen["shell"] = shell
+
+        class P:
+            def communicate(self):
+                return (b"ok", b"")
+
+        return P()
+
+    monkeypatch.setattr(views.subprocess, "Popen", fake_popen)
+
+    # Act
+    resp = views.cmd_lab(_make_request("example.com", os_value="linux"))
+
+    # Assert
+    assert seen["cmd"] == ["dig", "example.com"]
+    assert seen["shell"] is False
+    assert resp.status_code == 200
