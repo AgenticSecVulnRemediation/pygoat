@@ -922,11 +922,23 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
+                # Get the base directory using an absolute path
+                dirname = os.path.dirname(os.path.abspath(__file__))
+                # Retrieve the user input
+                requested_path = request.POST['blog']
+                
+                # Compute the absolute path by joining and normalizing the user-supplied path
+                abs_path = os.path.abspath(os.path.join(dirname, requested_path))
+                
+                # Verify that the computed absolute path is within the base directory
+                if not abs_path.startswith(dirname + os.sep):
+                    # Optionally, log the attempt here
+                    raise ValueError('Invalid path: potential path traversal attempt detected')
+
+                # Open and read the file securely
+                with open(abs_path, 'r') as file:
+                    data = file.read()
+                return render(request, 'Lab/ssrf/ssrf_lab.html', {'blog': data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
