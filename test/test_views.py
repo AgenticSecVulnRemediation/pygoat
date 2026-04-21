@@ -1,40 +1,47 @@
+import types
+
 import pytest
 
-# Assumption: tests run with project root on PYTHONPATH so `introduction` is importable.
+# Assumption: module path is importable as introduction.views
 from introduction import views
 
 
-class DummyUser:
-    is_authenticated = True
+def _make_request(body: bytes):
+    user = types.SimpleNamespace(is_authenticated=True)
+    req = types.SimpleNamespace()
+    req.user = user
+    req.body = body
+    return req
 
 
-class DummyRequest:
-    def __init__(self, body: bytes):
-        self.user = DummyUser()
-        self.body = body
-
-
-def test_xxe_parse_disables_external_entities_feature(mocker):
-    """Regression: XXE hardening should disable external general entities and use defusedxml parser."""
+def test_xxe_parse_disables_external_ges(monkeypatch):
     # Arrange
-    parser = mocker.Mock()
-    make_parser_mock = mocker.patch.object(views, "make_parser", return_value=parser)
+    seen = {}
 
-    # Ensure parseString returns an iterable of events and provides required methods on doc
-    doc = mocker.Mock()
-    doc.__iter__ = mocker.Mock(return_value=iter([]))
-    mocker.patch.object(views, "parseString", return_value=doc)
-    # Avoid DB update and template rendering
-    comments_qs = mocker.Mock()
-    comments_qs.update.return_value = 1
-    mocker.patch.object(views.comments, "objects", mocker.Mock(filter=mocker.Mock(return_value=comments_qs)))
-    mocker.patch.object(views, "render", return_value={"rendered": True})
+    class FakeParser:
+        def setFeature(self, feature, value):
+            seen["feature"] = feature
+            seen["value"] = value
 
-    req = DummyRequest(b"<root><text>hello</text></root>")
+    def fake_make_parser():
+        return FakeParser()
+
+    # parseString is called with parser kwarg
+    def fake_parse_string(xml, parser=None):
+        assert isinstance(parser, FakeParser)
+        # Minimal pulldom-like iterable
+        class FakeDoc:
+            def __iter__(self_inner):
+                return iter([])
+
+        return FakeDoc()
+
+    monkeypatch.setattr(views, "make_parser", fake_make_parser)
+    monkeypatch.setattr(views, "parseString", fake_parse_string)
 
     # Act
-    views.xxe_parse(req)
+    views.xxe_parse(_make_request(b"<root></root>"))
 
     # Assert
-    make_parser_mock.assert_called_once()
-    parser.setFeature.assert_called_once_with(views.feature_external_ges, False)
+    assert seen["feature"] == views.feature_external_ges
+    assert seen["value"] is False
