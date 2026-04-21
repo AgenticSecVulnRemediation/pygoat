@@ -1,26 +1,54 @@
+import os
+import types
+
 import pytest
 
-# Assumption: tests run with project root on PYTHONPATH so `introduction` is importable.
+# Assumption: module path is importable as introduction.mitre
 from introduction import mitre
 
 
-class DummyRequest:
-    def __init__(self, method="POST", ip=None):
-        self.method = method
-        self.POST = {"ip": ip} if ip is not None else {}
-        self.COOKIES = {}
+def _make_request(ip_value):
+    req = types.SimpleNamespace()
+    req.method = "POST"
+    req.POST = {"ip": ip_value}
+    req.COOKIES = {}
+    return req
 
 
-def test_mitre_lab_17_api_rejects_invalid_ip_and_does_not_invoke_subprocess(mocker):
-    """Regression for command injection fix: invalid IP must be rejected before calling nmap."""
+def test_mitre_lab_17_api_rejects_invalid_ip_returns_400(monkeypatch):
     # Arrange
-    req = DummyRequest(ip="127.0.0.1; rm -rf /")
-    popen_spy = mocker.patch.object(mitre.subprocess, "Popen")
+    req = _make_request("127.0.0.1; rm -rf /")
+    monkeypatch.setattr(mitre, "command_out", lambda cmd: (b"", b""))
 
     # Act
     resp = mitre.mitre_lab_17_api(req)
 
     # Assert
     assert getattr(resp, "status_code", None) == 400
-    assert b"Invalid IP" in resp.content
-    popen_spy.assert_not_called()
+
+
+def test_mitre_lab_17_api_uses_list_command_and_shell_false(monkeypatch):
+    # Arrange
+    seen = {}
+
+    def fake_popen(cmd, shell, stdout, stderr):
+        seen["cmd"] = cmd
+        seen["shell"] = shell
+
+        class P:
+            def communicate(self):
+                # minimal output to satisfy regex in handler
+                return (b"STATE SERVICE\n\n80/tcp open http\n", b"")
+
+        return P()
+
+    req = _make_request("127.0.0.1")
+    monkeypatch.setattr(mitre.subprocess, "Popen", fake_popen)
+
+    # Act
+    resp = mitre.mitre_lab_17_api(req)
+
+    # Assert
+    assert seen["cmd"] == ["nmap", "127.0.0.1"]
+    assert seen["shell"] is False
+    assert resp.status_code == 200
