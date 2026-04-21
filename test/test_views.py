@@ -1,38 +1,48 @@
-import types
-from unittest.mock import MagicMock
-
+import os
 import pytest
 
-# Assumption: Django app module path is "introduction" and ssrf_lab is importable from introduction.views
-from introduction.views import ssrf_lab
+# Assumption: tests run with project root on PYTHONPATH so `introduction` is importable.
+from introduction import views
 
 
-def _make_request(post_value: str):
-    req = types.SimpleNamespace()
-    req.method = "POST"
-    req.user = types.SimpleNamespace(is_authenticated=True)
-    req.POST = {"blog": post_value}
-    return req
+class DummyUser:
+    is_authenticated = True
 
 
-def test_ssrf_lab_blocks_path_traversal_via_dotdot(monkeypatch):
-    request = _make_request("../secret.txt")
+class DummyRequest:
+    def __init__(self, blog_value):
+        self.user = DummyUser()
+        self.method = "POST"
+        self.POST = {"blog": blog_value}
 
-    open_spy = MagicMock()
-    monkeypatch.setattr("builtins.open", open_spy)
 
-    response = ssrf_lab(request)
+def test_ssrf_lab_rejects_path_traversal_attempt(mocker):
+    """Regression for path traversal fix: absolute paths / '..' must be rejected."""
+    # Arrange: attempt to traverse out of allowed directory
+    req = DummyRequest("../secret.txt")
+    render_mock = mocker.patch.object(views, "render", return_value={"rendered": True})
+    open_spy = mocker.patch("builtins.open", autospec=True)
 
-    # The fix returns an "Invalid file path provided" blog response; ensure no file is opened
+    # Act
+    views.ssrf_lab(req)
+
+    # Assert
+    # Should render error message, and must not try to open any file
+    render_mock.assert_called()
+    args, kwargs = render_mock.call_args
+    assert kwargs.get("context") is None  # render called with positional context in this codebase
+    # Context is 3rd positional argument
+    assert args[2]["blog"] == "Invalid file path provided"
     open_spy.assert_not_called()
 
 
-def test_ssrf_lab_blocks_absolute_path(monkeypatch):
-    request = _make_request("/etc/passwd")
+def test_ssrf_lab_rejects_absolute_path(mocker):
+    req = DummyRequest(os.path.abspath("/tmp/real.txt"))
+    render_mock = mocker.patch.object(views, "render", return_value={"rendered": True})
+    open_spy = mocker.patch("builtins.open", autospec=True)
 
-    open_spy = MagicMock()
-    monkeypatch.setattr("builtins.open", open_spy)
+    views.ssrf_lab(req)
 
-    response = ssrf_lab(request)
-
+    args, _ = render_mock.call_args
+    assert args[2]["blog"] == "Invalid file path provided"
     open_spy.assert_not_called()
