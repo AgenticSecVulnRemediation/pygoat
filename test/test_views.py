@@ -1,37 +1,35 @@
 import types
-from unittest.mock import MagicMock
 
 import pytest
+import yaml
 
-# Assumption: Django app module path is "introduction" and a9_lab is importable from introduction.views
-from introduction.views import a9_lab
+# Assumption: module path is importable as introduction.views
+from introduction import views
 
 
 def _make_request(file_obj):
+    user = types.SimpleNamespace(is_authenticated=True)
     req = types.SimpleNamespace()
-    req.user = types.SimpleNamespace(is_authenticated=True)
     req.method = "POST"
     req.FILES = {"file": file_obj}
+    req.user = user
     return req
 
 
-def test_a9_lab_uses_yaml_safe_load(monkeypatch):
+def test_a9_lab_uses_safe_load_rejects_python_object_tags(monkeypatch):
     # Arrange
-    request = _make_request(file_obj=object())
+    payload = "!!python/object/apply:os.system ['echo pwned']\n"
+    file_obj = types.SimpleNamespace(read=lambda: payload.encode("utf-8"))
 
-    safe_load_spy = MagicMock(return_value={"k": "v"})
-    load_spy = MagicMock(side_effect=AssertionError("yaml.load should not be used"))
+    # Avoid template rendering; ensure code reaches YAML parse and fails
+    def fake_render(request, template, context=None):
+        return types.SimpleNamespace(status_code=200, content=str(context).encode())
 
-    monkeypatch.setattr("introduction.views.yaml.safe_load", safe_load_spy)
-    monkeypatch.setattr("introduction.views.yaml.load", load_spy)
-
-    render_spy = MagicMock(return_value="rendered")
-    monkeypatch.setattr("introduction.views.render", render_spy)
+    monkeypatch.setattr(views, "render", fake_render)
 
     # Act
-    result = a9_lab(request)
+    resp = views.a9_lab(_make_request(file_obj))
 
     # Assert
-    assert result == "rendered"
-    safe_load_spy.assert_called_once()
-    load_spy.assert_not_called()
+    # safe_load should raise and the view should return context with data="Error"
+    assert "'data': 'Error'" in resp.content.decode("utf-8")
