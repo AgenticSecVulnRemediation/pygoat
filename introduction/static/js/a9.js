@@ -1,4 +1,10 @@
 // console.log("imported a9.js");
+// Helper function to escape HTML special characters
+function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
 
 event1 = function(){
     document.getElementById("a9_b1").style.display = 'none';
@@ -11,8 +17,8 @@ event2 = function(){
 }
 
 event3 = function(){
-    var log_code = document.getElementById('a9_log').value
-    var target_code = document.getElementById('a9_api').value
+    var log_code = escapeHTML(document.getElementById('a9_log').value);
+    var target_code = escapeHTML(document.getElementById('a9_api').value);
 
     var myHeaders = new Headers();
     myHeaders.append("Cookie", "csrftoken=5fVOTXh2HNahtvJFJNRSrKkwPAgPM9YCHlrCGprAxhAAKOUWMxqMnWm8BUomv0Yd; jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MSwiZXhwIjoxNjUzMzEzMDIxLCJpYXQiOjE2NTMzMDk0MjF9.dh2gfP9wKD8GKu1J-jVs2jJUYMgKu_kMaJjrD0hHP-I");
