@@ -2,18 +2,17 @@
  * @jest-environment jsdom
  */
 
-describe('ssrf.js checkcode input sanitization', () => {
+describe('ssrf.js checkcode sanitization', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <textarea id="python"></textarea>
       <textarea id="html"></textarea>
     `;
-    jest.resetModules();
 
+    jest.resetModules();
     global.DOMPurify = { sanitize: jest.fn((x) => `SANITIZED:${x}`) };
     global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve('{"passed":0,"message":"ok"}') }));
 
-    // Node FormData shim to capture
     const fields = {};
     global.FormData = class {
       append(k, v) {
@@ -23,7 +22,7 @@ describe('ssrf.js checkcode input sanitization', () => {
     global.__fields = fields;
   });
 
-  test('sanitizes both python_code and html_code before sending', async () => {
+  test('sanitizes python_code and html_code before sending', async () => {
     document.getElementById('python').value = '<img src=x onerror=alert(1)>';
     document.getElementById('html').value = '<svg onload=alert(1)>';
 
