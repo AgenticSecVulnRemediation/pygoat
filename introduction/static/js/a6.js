@@ -1,5 +1,18 @@
+/*
+ * Helper function to escape HTML special characters
+ * Replace the characters: & => &amp;, < => &lt;, > => &gt;, " => &quot;, ' => &#39;
+ */
+function escapeHTML(str) {
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+}
+
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+
+    var code = escapeHTML(document.getElementById('a6_t1').value);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
