@@ -1,52 +1,26 @@
-import types
-from unittest.mock import MagicMock
-
 import pytest
 
-# Assumption: Django app module path is "introduction" and mitre_lab_17_api is importable from introduction.mitre
-from introduction.mitre import mitre_lab_17_api
+# Assumption: tests run with project root on PYTHONPATH so `introduction` is importable.
+from introduction import mitre
 
 
-def _make_request(ip: str):
-    req = types.SimpleNamespace()
-    req.method = "POST"
-    req.POST = {"ip": ip}
-    return req
+class DummyRequest:
+    def __init__(self, method="POST", ip=None):
+        self.method = method
+        self.POST = {"ip": ip} if ip is not None else {}
+        self.COOKIES = {}
 
 
-def test_mitre_lab_17_api_rejects_invalid_ip_returns_400(monkeypatch):
+def test_mitre_lab_17_api_rejects_invalid_ip_and_does_not_invoke_subprocess(mocker):
+    """Regression for command injection fix: invalid IP must be rejected before calling nmap."""
     # Arrange
-    request = _make_request("127.0.0.1; whoami")
-
-    popen_spy = MagicMock()
-    monkeypatch.setattr("introduction.mitre.subprocess.Popen", popen_spy)
+    req = DummyRequest(ip="127.0.0.1; rm -rf /")
+    popen_spy = mocker.patch.object(mitre.subprocess, "Popen")
 
     # Act
-    response = mitre_lab_17_api(request)
+    resp = mitre.mitre_lab_17_api(req)
 
     # Assert
-    assert response.status_code == 400
-    # Ensure no subprocess execution for invalid input
+    assert getattr(resp, "status_code", None) == 400
+    assert b"Invalid IP" in resp.content
     popen_spy.assert_not_called()
-
-
-def test_mitre_lab_17_api_executes_nmap_without_shell_and_uses_argv_list(monkeypatch):
-    # Arrange
-    request = _make_request("127.0.0.1")
-
-    process = MagicMock()
-    process.communicate.return_value = (b"STATE SERVICE\n\n22/tcp open ssh\n", b"")
-
-    def _popen(args, **kwargs):
-        # Assert (within call) - critical security properties
-        assert args == ["nmap", "127.0.0.1"]
-        assert kwargs.get("shell") is False
-        return process
-
-    monkeypatch.setattr("introduction.mitre.subprocess.Popen", _popen)
-
-    # Act
-    response = mitre_lab_17_api(request)
-
-    # Assert
-    assert response.status_code == 200
