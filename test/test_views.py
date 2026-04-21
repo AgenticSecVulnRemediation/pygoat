@@ -1,35 +1,53 @@
 import types
-from unittest.mock import MagicMock
 
 import pytest
 
-# Assumption: Django app module path is "introduction" and cmd_lab is importable from introduction.views
-from introduction.views import cmd_lab
+# Assumption: module path is importable as introduction.views
+from introduction import views
 
 
-def _make_request(domain: str, os_name: str = "linux"):
+def _make_request(domain, os_value="win"):
+    user = types.SimpleNamespace(is_authenticated=True)
     req = types.SimpleNamespace()
     req.method = "POST"
-    req.user = types.SimpleNamespace(is_authenticated=True)
-    req.POST = {"domain": domain, "os": os_name}
+    req.POST = {"domain": domain, "os": os_value}
+    req.user = user
     return req
 
 
-def test_cmd_lab_uses_subprocess_without_shell_and_list_args(monkeypatch):
+def test_cmd_lab_uses_list_command_and_no_shell(monkeypatch):
     # Arrange
-    request = _make_request("example.com", os_name="linux")
+    seen = {}
 
-    proc = MagicMock()
-    proc.communicate.return_value = (b"out", b"")
+    def fake_popen(cmd, stdout, stderr):
+        seen["cmd"] = cmd
 
-    popen_spy = MagicMock(return_value=proc)
-    monkeypatch.setattr("introduction.views.subprocess.Popen", popen_spy)
+        class P:
+            def communicate(self):
+                return (b"ok", b"")
+
+        return P()
+
+    monkeypatch.setattr(views.subprocess, "Popen", fake_popen)
 
     # Act
-    response = cmd_lab(request)
+    resp = views.cmd_lab(_make_request("example.com", os_value="win"))
 
     # Assert
-    popen_spy.assert_called_once()
-    args, kwargs = popen_spy.call_args
-    assert args[0] == ["dig", "example.com"]
-    assert kwargs.get("shell") is None or kwargs.get("shell") is False
+    assert seen["cmd"] == ["nslookup", "example.com"]
+    assert resp.status_code == 200
+
+
+def test_cmd_lab_does_not_allow_command_injection_payload(monkeypatch):
+    # Arrange
+    def fail_popen(*args, **kwargs):
+        raise AssertionError("Popen must not be called when domain is invalid")
+
+    monkeypatch.setattr(views.subprocess, "Popen", fail_popen)
+
+    # Act
+    resp = views.cmd_lab(_make_request("example.com; whoami", os_value="win"))
+
+    # Assert
+    # Handler catches exception and shows generic error
+    assert "Something went wrong" in str(resp.content)
