@@ -1,5 +1,7 @@
 event5 = function(){
-    var code = document.getElementById('a6_t1').value
+    // Ensure that DOMPurify is loaded in your HTML (e.g., via a script tag or module import)
+    var rawInput = document.getElementById('a6_t1').value;
+    var code = DOMPurify.sanitize(rawInput);
     var myHeaders = new Headers();
     var formdata = new FormData();
 
