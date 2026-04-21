@@ -10,11 +10,10 @@ describe('a9.js event3 log rendering', () => {
       <ul id="a9_d3" style="display:none"></ul>
     `;
 
-    // Load the script under test into the JSDOM environment.
     jest.resetModules();
   });
 
-  test('uses textContent (not innerHTML) when appending log entries', async () => {
+  test('appends logs using textContent (prevents DOM XSS)', async () => {
     const malicious = '<img src=x onerror="window.__xss = true">X';
 
     global.fetch = jest.fn(() =>
@@ -23,18 +22,13 @@ describe('a9.js event3 log rendering', () => {
       })
     );
 
-    // Require after setting up globals
     require('../../introduction/static/js/a9.js');
 
-    // Call global event3 defined by the script
     await global.event3();
 
     const li = document.querySelector('#a9_d3 li');
     expect(li).not.toBeNull();
-
-    // If innerHTML were used, an <img> element would be created.
     expect(li.querySelector('img')).toBeNull();
-    // Text should include the raw string.
     expect(li.textContent).toBe(malicious);
   });
 });
