@@ -33,6 +33,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageMath
 from requests.structures import CaseInsensitiveDict
+from django.utils.html import escape
 
 from .forms import NewUserForm
 from .models import (FAANG, AF_admin, AF_session_id, Blogs, CF_user, authLogin,
@@ -106,7 +107,7 @@ def xss_lab(request):
 def xss_lab2(request):
     if request.user.is_authenticated:
         
-        username = request.POST.get('username', '')
+        username = escape(request.POST.get('username', ''))
         if username:
             username = username.strip()
             username = username.replace("<script>", "").replace("</script>", "")
