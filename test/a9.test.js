@@ -1,52 +1,46 @@
-// Source: introduction/static/js/a9.js
-// Assumption: Jest is configured with jsdom and supports moduleNameMapper for 'dompurify'.
+/**
+ * @jest-environment jsdom
+ */
 
 jest.mock('dompurify', () => ({
-  sanitize: jest.fn((s) => `SANITIZED:${s}`),
-}), { virtual: true });
+  __esModule: true,
+  default: { sanitize: jest.fn((x) => `sanitized:${x}`) },
+}));
 
-const DOMPurify = require('dompurify');
+const DOMPurify = require('dompurify').default;
 
-describe('a9.js event3 sanitization', () => {
-  beforeEach(() => {
-    jest.resetModules();
+require('../../introduction/static/js/a9.js');
+
+describe('a9.js event3 (DOMPurify sanitize)', () => {
+  test('sanitizes log_code and api_code before adding to FormData', () => {
+    // Arrange
     document.body.innerHTML = `
       <textarea id="a9_log"></textarea>
       <textarea id="a9_api"></textarea>
-      <ul id="a9_d3"></ul>
+      <div id="a9_d3"></div>
+      <button id="a9_b1"></button>
+      <button id="a9_b2"></button>
+      <div id="a9_d1"></div>
+      <div id="a9_d2"></div>
     `;
+    document.getElementById('a9_log').value = '<img src=x onerror=alert(1)>';
+    document.getElementById('a9_api').value = '<svg/onload=alert(2)>';
 
-    global.fetch = jest.fn(() => Promise.resolve({
+    const appendSpy = jest.fn();
+    global.FormData = function () { this.append = appendSpy; };
+
+    global.fetch = jest.fn().mockResolvedValue({
       text: () => Promise.resolve(JSON.stringify({ logs: [] }))
-    }));
-
-    global.FormData = class {
-      constructor() { this._data = {}; }
-      append(k, v) { this._data[k] = v; }
-    };
-
-    global.Headers = class {
-      constructor() { this._h = {}; }
-      append(k, v) { this._h[k] = v; }
-    };
-  });
-
-  test('event3 sanitizes both log_code and api_code before sending', () => {
-    // Arrange
-    require('../introduction/static/js/a9.js');
-
-    document.getElementById('a9_log').value = '<img src=x onerror=1>';
-    document.getElementById('a9_api').value = '<svg onload=1>';
+    });
 
     // Act
     global.event3();
 
     // Assert
-    expect(DOMPurify.sanitize).toHaveBeenCalledWith('<img src=x onerror=1>');
-    expect(DOMPurify.sanitize).toHaveBeenCalledWith('<svg onload=1>');
+    expect(DOMPurify.sanitize).toHaveBeenCalledWith('<img src=x onerror=alert(1)>');
+    expect(DOMPurify.sanitize).toHaveBeenCalledWith('<svg/onload=alert(2)>');
 
-    const fd = global.fetch.mock.calls[0][1].body;
-    expect(fd._data.log_code).toBe('SANITIZED:<img src=x onerror=1>');
-    expect(fd._data.api_code).toBe('SANITIZED:<svg onload=1>');
+    expect(appendSpy).toHaveBeenCalledWith('log_code', 'sanitized:<img src=x onerror=alert(1)>');
+    expect(appendSpy).toHaveBeenCalledWith('api_code', 'sanitized:<svg/onload=alert(2)>');
   });
 });
