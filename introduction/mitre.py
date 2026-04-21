@@ -1,6 +1,7 @@
 import datetime
 import re
 import subprocess
+import re
 from hashlib import md5
 
 import jwt
@@ -230,7 +231,7 @@ def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
 def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process.communicate()
     
 
@@ -238,7 +239,10 @@ def command_out(command):
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
-        command = "nmap " + ip 
+        if not re.fullmatch(r'[a-zA-Z0-9.\-]+', ip):
+            # Replace the placeholder with proper error handling
+            return HttpResponseBadRequest('Invalid IP address format')
+        command = ["nmap", ip] 
         res, err = command_out(command)
         res = res.decode()
         err = err.decode()
