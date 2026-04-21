@@ -8,6 +8,7 @@ describe('a7.js event4 sanitization', () => {
       <input id="a7_input" value="" />
       <div id="a7_d4" style="display:none"></div>
     `;
+
     jest.resetModules();
 
     global.DOMPurify = { sanitize: jest.fn((x) => `SAN:${x}`) };
