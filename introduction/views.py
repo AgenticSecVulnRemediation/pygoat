@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
+from defusedxml.pulldom import START_ELEMENT, parseString
 from xml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
@@ -255,17 +255,34 @@ def xxe_see(request):
 @csrf_exempt
 def xxe_parse(request):
 
+    if not request.body:
+        return HttpResponseBadRequest("Empty XML input")
+    try:
+        xml_data = request.body.decode('utf-8')
+    except Exception:
+        return HttpResponseBadRequest("Invalid XML encoding")
     parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
-    doc = parseString(request.body.decode('utf-8'), parser=parser)
+    parser.setFeature(feature_external_ges, False)
+    try:
+        doc = parseString(xml_data, parser=parser)
+    except Exception as e:
+        logging.error(f"XML parsing failed: {e}")
+        return HttpResponseBadRequest("Invalid XML input")
+    text = ""
     for event, node in doc:
         if event == START_ELEMENT and node.tagName == 'text':
             doc.expandNode(node)
             text = node.toxml()
-    startInd = text.find('>')
-    endInd = text.find('<', startInd)
-    text = text[startInd + 1:endInd:]
-    p=comments.objects.filter(id=1).update(comment=text)
+            break
+    if text:
+        startInd = text.find('>')
+        endInd = text.find('<', startInd)
+        if startInd == -1 or endInd == -1:
+            return HttpResponseBadRequest("Malformed XML content")
+        text = text[startInd + 1:endInd]
+        comments.objects.filter(id=1).update(comment=text)
+    else:
+        return HttpResponseBadRequest("XML does not contain required text element")
 
     return render(request, 'Lab/XXE/xxe_lab.html')
 
