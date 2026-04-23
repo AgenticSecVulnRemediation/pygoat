@@ -922,10 +922,14 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                if os.path.isabs(file) or '..' in file:
+                    raise ValueError('Invalid file path')
+                safe_base = os.path.realpath(os.path.dirname(__file__))
+                normalized_path = os.path.realpath(os.path.join(safe_base, file))
+                if not normalized_path.startswith(safe_base):
+                    raise ValueError('Invalid file path')
+                with open(normalized_path, "r") as f:
+                    data = f.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
@@ -990,8 +994,8 @@ def ssti_lab(request):
             blog = prepend_code + blog + "{% endblock %}"
             new_blog = Blogs.objects.create(author = request.user, blog_id = id)
             new_blog.save() 
-            dirname = os.path.dirname(__file__)
-            filename = os.path.join(dirname, f"templates/Lab_2021/A3_Injection/Blogs/{id}.html")
+            safe_base = os.path.realpath(os.path.dirname(__file__))
+            filename = os.path.join(safe_base, f"templates/Lab_2021/A3_Injection/Blogs/{id}.html")
             file = open(filename, "w+") 
             file.write(blog)
             file.close()
