@@ -59,9 +59,12 @@ function checkcode(){
     var python_code = document.getElementById('python').value
     var html_code = document.getElementById('html').value
 
+        // Sanitize inputs using DOMPurify (ensure that DOMPurify is imported in your HTML or bundled with your JS)
+    var sanitized_python = DOMPurify.sanitize(python_code);
+    var sanitized_html = DOMPurify.sanitize(html_code);
     var formdata = new FormData();
-    formdata.append('python_code', python_code);
-    formdata.append('html_code', html_code);
+    formdata.append('python_code', sanitized_python);
+    formdata.append('html_code', sanitized_html);
     var requestOptions = {
         method: 'POST',
         body: formdata,
