@@ -55,9 +55,20 @@ function frame3to4(){
 }
 
 
+
+// New function to sanitize user input
+function sanitizeHtml(input) {
+    return input.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;')
+                .replace(/\//g, '&#x2F;');
+}
+
 function checkcode(){
     var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var html_code = sanitizeHtml(document.getElementById('html').value)
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
