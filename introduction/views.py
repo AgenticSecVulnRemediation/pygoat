@@ -922,9 +922,12 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                base_dir = os.path.realpath(os.path.dirname(__file__))
+                resolved_path = os.path.realpath(os.path.join(base_dir, file))
+                if not resolved_path.startswith(base_dir + os.sep):
+                    # TODO: Replace placeholder error handling with appropriate logging or user notifications
+                    raise ValueError("Invalid file path")
+                file = open(resolved_path, "r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
