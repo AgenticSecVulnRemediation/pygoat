@@ -1,6 +1,7 @@
 import datetime
 import re
 import subprocess
+import shlex
 from hashlib import md5
 
 import jwt
@@ -230,14 +231,21 @@ def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
 def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    args = shlex.split(command)  # Tokenize the command safely
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process.communicate()
     
+
+def is_valid_ip(ip):
+    pattern = r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
+    return re.match(pattern, ip) is not None
 
 @csrf_exempt
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
+        if not (ip and is_valid_ip(ip)):
+            return HttpResponseBadRequest('Invalid IP format')
         command = "nmap " + ip 
         res, err = command_out(command)
         res = res.decode()
