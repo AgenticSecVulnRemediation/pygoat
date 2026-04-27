@@ -922,10 +922,15 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
+                # Validate the 'file' parameter to prevent directory traversal
+                if '..' in file or os.path.isabs(file):
+                    return render(request, 'Lab/ssrf/ssrf_lab.html', {'blog': 'Invalid file path'})
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                target_path = os.path.abspath(os.path.join(dirname, file))
+                if not target_path.startswith(os.path.abspath(dirname) + os.sep):
+                    return render(request, 'Lab/ssrf/ssrf_lab.html', {'blog': 'Invalid file path'})
+                f = open(target_path, "r")
+                data = f.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
