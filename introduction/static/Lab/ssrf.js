@@ -1,4 +1,7 @@
 
+// Import DOMPurify for sanitizing HTML inputs. Replace the following placeholder with the appropriate method depending on your project setup
+// import DOMPurify from 'dompurify';
+
 function frame1to2(){
     // frame 1 to 2
     document.getElementById('ssrf-frame-1').style.display = 'none';
@@ -57,7 +60,8 @@ function frame3to4(){
 
 function checkcode(){
     var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var html_code_raw = document.getElementById('html').value;
+    var html_code = DOMPurify.sanitize(html_code_raw);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
