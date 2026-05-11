@@ -1,5 +1,6 @@
 {% extends "introduction/base.html" %}
 {% load static %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.10/purify.min.js"></script>
 {% block content %}
 {% block title %}
 <title> Code Injection </title>
@@ -18,7 +19,7 @@
     Details</button></div>
     <script>
         function calculate(){
-            var input = document.getElementById("input").value;
+            var input = DOMPurify.sanitize(document.getElementById("input").value);
             var output = document.getElementById("output");
             var headers = new Headers();
             var formdata = new FormData();
