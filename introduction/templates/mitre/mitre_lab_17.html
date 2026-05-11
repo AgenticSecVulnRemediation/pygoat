@@ -38,8 +38,11 @@
                 .then(result => {
                     var data = JSON.parse(result);
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                    for (let p in data.ports) {
+                        var spanElem = document.createElement('span');
+                        spanElem.textContent = ports[p];
+                        output.appendChild(spanElem);
+                        output.appendChild(document.createElement('br'));}
                 })
                 .catch(
                     error => {console.log("error", error);
