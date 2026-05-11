@@ -1,0 +1,1 @@
+// Skipped: introduction/templates/Lab/XSS/xss_lab_2.html - Language not supported for unit test generation
