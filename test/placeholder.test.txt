@@ -1,0 +1,1 @@
+// Skipped: dockerized_labs/insec_des_lab/templates/base.html - Language not supported for unit test generation
