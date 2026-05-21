@@ -20,6 +20,7 @@ from xml.sax.handler import feature_external_ges
 
 import jwt
 import requests
+from urllib.parse import urlparse
 import yaml
 from argon2 import PasswordHasher
 from django.contrib import messages
@@ -953,14 +954,27 @@ def ssrf_target(request):
         return render(request,"Lab/ssrf/ssrf_target.html",{"access_denied":True})
 
 @authentication_decorator
+def safe_url(url):
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return None
+    # TODO: update allowed domain list
+    allowed_domains = ["example.com", "trusted.com"]
+    if parsed.netloc not in allowed_domains:
+        return None
+    return url
+
 def ssrf_lab2(request):
     if request.method == "GET":
         return render(request, "Lab/ssrf/ssrf_lab2.html")
 
     elif request.method == "POST":
         url = request.POST["url"]
+        safe = safe_url(url)
+        if safe is None:
+            return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid or disallowed URL"})
         try:
-            response = requests.get(url)
+            response = requests.get(safe)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
         except:
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid URL"})
