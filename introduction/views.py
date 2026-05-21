@@ -959,6 +959,11 @@ def ssrf_lab2(request):
 
     elif request.method == "POST":
         url = request.POST["url"]
+        from urllib.parse import urlparse
+        ALLOWED_HOSTS = ['example.com']
+        parsed_url = urlparse(url)
+        if parsed_url.scheme not in ['http', 'https'] or parsed_url.netloc not in ALLOWED_HOSTS:
+            return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Disallowed URL"})
         try:
             response = requests.get(url)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
