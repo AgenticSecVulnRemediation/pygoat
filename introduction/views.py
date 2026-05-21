@@ -920,13 +920,21 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
+            user_file = request.POST["blog"]
+            # Whitelist of allowed file names; update whitelist as needed for approved file names
+            allowed_files = ['blog_post.txt']
+            if user_file not in allowed_files or os.path.isabs(user_file) or '..' in user_file:
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file selection"})
+            secure_dir = os.path.join(os.path.dirname(__file__), 'secure_blogs')
+            secure_dir = os.path.abspath(secure_dir)
+            full_path = os.path.join(secure_dir, user_file)
+            full_path = os.path.abspath(full_path)
+            if not full_path.startswith(secure_dir + os.sep):
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file selection"})
+            try:
+                with open(full_path, "r") as file:
+                    data = file.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
