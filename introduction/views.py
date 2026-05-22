@@ -20,6 +20,7 @@ from xml.sax.handler import feature_external_ges
 
 import jwt
 import requests
+import urllib.parse
 import yaml
 from argon2 import PasswordHasher
 from django.contrib import messages
@@ -959,6 +960,10 @@ def ssrf_lab2(request):
 
     elif request.method == "POST":
         url = request.POST["url"]
+        parsed_url = urllib.parse.urlparse(url)
+        allowed_domains = ['example.com']  # TODO: Replace with trusted domain(s)
+        if parsed_url.netloc not in allowed_domains:
+            return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Domain not allowed"})
         try:
             response = requests.get(url)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
