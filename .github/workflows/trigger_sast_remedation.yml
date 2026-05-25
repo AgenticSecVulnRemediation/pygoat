@@ -1,7 +1,8 @@
 # =============================================================================
 # Workflow: Trigger SAST Remediation Pipeline
 # Description: Calls the AES execution API to initiate the Third-Party SAST
-#              to RapidFix Remediation workflow.
+#              to RapidFix Remediation workflow, polls for completion, and
+#              prints the execution output once finished.
 # =============================================================================
 
 name: Trigger SAST Remediation
@@ -29,11 +30,12 @@ jobs:
 
     steps:
       # -----------------------------------------------------------------------
-      # Step 1: Call AES Execution API
+      # Step 1: Trigger execution and capture execution_id
       # -----------------------------------------------------------------------
       - name: Trigger SAST to RapidFix Remediation
+        id: trigger
         run: |
-          curl -X POST "${{ secrets.DMS_BASE_URL }}/aes/executions" \
+          RESPONSE=$(curl -s -X POST "${{ secrets.DMS_BASE_URL }}/aes/executions" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.DMS_BEARER_TOKEN }}" \
             -d '{
@@ -49,4 +51,90 @@ jobs:
               },
               "callback_url": "https://example.com/"
             }' \
-            --fail-with-body
+            --fail-with-body)
+
+          echo "Create execution response:"
+          echo "$RESPONSE" | jq .
+
+          EXECUTION_ID=$(echo "$RESPONSE" | jq -r '.data.id')
+
+          if [ -z "$EXECUTION_ID" ] || [ "$EXECUTION_ID" = "null" ]; then
+            echo "ERROR: Failed to extract execution_id from response."
+            exit 1
+          fi
+
+          echo "Execution triggered successfully. execution_id: $EXECUTION_ID"
+          echo "execution_id=$EXECUTION_ID" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # Step 2: Poll for execution completion
+      #         Polls every 30 seconds, times out after 30 minutes (60 attempts)
+      #         exec_status: 0=new, 1=in-progress, 2=completed, 3=failed
+      # -----------------------------------------------------------------------
+      - name: Poll Execution Status
+        run: |
+          EXECUTION_ID="${{ steps.trigger.outputs.execution_id }}"
+          MAX_ATTEMPTS=60
+          POLL_INTERVAL=30
+          ATTEMPT=0
+
+          echo "Starting polling for execution_id: $EXECUTION_ID"
+          echo "Max wait time: $((MAX_ATTEMPTS * POLL_INTERVAL / 60)) minutes"
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo ""
+            echo "--- Poll attempt $ATTEMPT / $MAX_ATTEMPTS ---"
+
+            RESPONSE=$(curl -s -X GET \
+              "${{ secrets.DMS_BASE_URL }}/aes/executions/$EXECUTION_ID" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${{ secrets.DMS_BEARER_TOKEN }}" \
+              --fail-with-body)
+
+            if [ $? -ne 0 ]; then
+              echo "ERROR: Failed to reach the execution status endpoint."
+              exit 1
+            fi
+
+            EXEC_STATUS=$(echo "$RESPONSE" | jq -r '.data[0].exec_status')
+
+            case "$EXEC_STATUS" in
+              0)
+                echo "Status: New (0) — waiting for execution to start..."
+                ;;
+              1)
+                echo "Status: In-Progress (1) — execution is running..."
+                ;;
+              2)
+                echo "Status: Completed (2) — execution finished successfully."
+                echo ""
+                echo "=============================== EXECUTION OUTPUT ==============================="
+                echo "$RESPONSE" | jq '.data[0].output'
+                echo "================================================================================"
+                exit 0
+                ;;
+              3)
+                echo "Status: Failed (3) — execution encountered an error."
+                echo ""
+                echo "=============================== EXECUTION OUTPUT ==============================="
+                echo "$RESPONSE" | jq '.data[0].output'
+                echo "================================= ERROR DETAILS ================================"
+                echo "$RESPONSE" | jq '.data[0].error'
+                echo "================================================================================"
+                exit 1
+                ;;
+              *)
+                echo "ERROR: Unexpected exec_status value: '$EXEC_STATUS'. Full response:"
+                echo "$RESPONSE" | jq .
+                exit 1
+                ;;
+            esac
+
+            echo "Next poll in ${POLL_INTERVAL}s..."
+            sleep $POLL_INTERVAL
+          done
+
+          echo ""
+          echo "ERROR: Timed out after $((MAX_ATTEMPTS * POLL_INTERVAL / 60)) minutes waiting for execution_id $EXECUTION_ID to complete."
+          exit 1
