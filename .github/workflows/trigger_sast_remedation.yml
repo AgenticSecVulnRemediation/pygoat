@@ -1,4 +1,5 @@
 # =============================================================================
+# =============================================================================
 # Workflow: Trigger SAST Remediation Pipeline
 # Description: Calls the AES execution API to initiate the Third-Party SAST
 #              to RapidFix Remediation workflow, polls for completion, and
@@ -19,8 +20,11 @@ on:
       - master
 
 jobs:
-  trigger-remediation:
-    name: Call AES Execution API
+  # ---------------------------------------------------------------------------
+  # Job 1: Trigger the AES execution and capture the execution_id
+  # ---------------------------------------------------------------------------
+  trigger-execution:
+    name: Trigger AES Execution
     runs-on: ubuntu-latest
 
     # Only run on manual dispatch OR when a PR is actually merged (not just closed)
@@ -28,10 +32,10 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
+    outputs:
+      execution_id: ${{ steps.trigger.outputs.execution_id }}
+
     steps:
-      # -----------------------------------------------------------------------
-      # Step 1: Trigger execution and capture execution_id
-      # -----------------------------------------------------------------------
       - name: Trigger SAST to RapidFix Remediation
         id: trigger
         run: |
@@ -66,14 +70,25 @@ jobs:
           echo "Execution triggered successfully. execution_id: $EXECUTION_ID"
           echo "execution_id=$EXECUTION_ID" >> "$GITHUB_OUTPUT"
 
-      # -----------------------------------------------------------------------
-      # Step 2: Poll for execution completion
-      #         Polls every 30 seconds, times out after 30 minutes (60 attempts)
-      #         exec_status: 0=new, 1=in-progress, 2=completed, 3=failed
-      # -----------------------------------------------------------------------
-      - name: Poll Execution Status
+  # ---------------------------------------------------------------------------
+  # Job 2: Poll the execution status until a terminal state is reached
+  #         Polls every 30 seconds, times out after 30 minutes (60 attempts)
+  #         exec_status: 0=new, 1=in-progress, 2=completed, 3=failed
+  #         Always exits cleanly and forwards exec_status to the next job
+  # ---------------------------------------------------------------------------
+  poll-execution-status:
+    name: Poll Execution Status
+    runs-on: ubuntu-latest
+    needs: trigger-execution
+
+    outputs:
+      exec_status: ${{ steps.poll.outputs.exec_status }}
+
+    steps:
+      - name: Poll Until Terminal State
+        id: poll
         run: |
-          EXECUTION_ID="${{ steps.trigger.outputs.execution_id }}"
+          EXECUTION_ID="${{ needs.trigger-execution.outputs.execution_id }}"
           MAX_ATTEMPTS=60
           POLL_INTERVAL=30
           ATTEMPT=0
@@ -108,21 +123,13 @@ jobs:
                 ;;
               2)
                 echo "Status: Completed (2) — execution finished successfully."
-                echo ""
-                echo "=============================== EXECUTION OUTPUT ==============================="
-                echo "$RESPONSE" | jq '.data[0].output'
-                echo "================================================================================"
+                echo "exec_status=$EXEC_STATUS" >> "$GITHUB_OUTPUT"
                 exit 0
                 ;;
               3)
                 echo "Status: Failed (3) — execution encountered an error."
-                echo ""
-                echo "=============================== EXECUTION OUTPUT ==============================="
-                echo "$RESPONSE" | jq '.data[0].output'
-                echo "================================= ERROR DETAILS ================================"
-                echo "$RESPONSE" | jq '.data[0].error'
-                echo "================================================================================"
-                exit 1
+                echo "exec_status=$EXEC_STATUS" >> "$GITHUB_OUTPUT"
+                exit 0
                 ;;
               *)
                 echo "ERROR: Unexpected exec_status value: '$EXEC_STATUS'. Full response:"
@@ -138,3 +145,46 @@ jobs:
           echo ""
           echo "ERROR: Timed out after $((MAX_ATTEMPTS * POLL_INTERVAL / 60)) minutes waiting for execution_id $EXECUTION_ID to complete."
           exit 1
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Fetch and display the final execution output
+  #         Fails the workflow if exec_status was 3 (failed)
+  # ---------------------------------------------------------------------------
+  display-execution-output:
+    name: Display Execution Output
+    runs-on: ubuntu-latest
+    needs: [trigger-execution, poll-execution-status]
+
+    steps:
+      - name: Fetch and Print Execution Output
+        run: |
+          EXECUTION_ID="${{ needs.trigger-execution.outputs.execution_id }}"
+          EXEC_STATUS="${{ needs.poll-execution-status.outputs.exec_status }}"
+
+          RESPONSE=$(curl -s -X GET \
+            "${{ secrets.DMS_BASE_URL }}/aes/executions/$EXECUTION_ID" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.DMS_BEARER_TOKEN }}" \
+            --fail-with-body)
+
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to fetch execution output."
+            exit 1
+          fi
+
+          if [ "$EXEC_STATUS" = "2" ]; then
+            echo "Execution completed successfully."
+            echo ""
+            echo "=============================== EXECUTION OUTPUT ==============================="
+            echo "$RESPONSE" | jq '.data[0].output'
+            echo "================================================================================"
+          elif [ "$EXEC_STATUS" = "3" ]; then
+            echo "Execution failed."
+            echo ""
+            echo "=============================== EXECUTION OUTPUT ==============================="
+            echo "$RESPONSE" | jq '.data[0].output'
+            echo "================================= ERROR DETAILS ================================"
+            echo "$RESPONSE" | jq '.data[0].error'
+            echo "================================================================================"
+            exit 1
+          fi
