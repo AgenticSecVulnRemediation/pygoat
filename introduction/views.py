@@ -4,6 +4,9 @@ import hashlib
 import json
 import logging
 import os
+
+# Define a fixed safe directory for blog files. Replace 'safe_blogs' with your desired directory if needed.
+SAFE_BLOG_DIR = os.path.join(os.path.dirname(__file__), 'safe_blogs')
 import pickle
 import random
 import re
@@ -920,11 +923,13 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+            user_file = request.POST.get("blog", "")
+            sanitized_filename = os.path.basename(user_file)  # strips away any path if present
+            full_path = os.path.realpath(os.path.join(SAFE_BLOG_DIR, sanitized_filename))
+            if not full_path.startswith(os.path.realpath(SAFE_BLOG_DIR) + os.sep):
+                return render(request, 'Lab/ssrf/ssrf_lab.html', {"blog": "Access to the requested file is not allowed"})
+            try:
+                file = open(full_path, "r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
