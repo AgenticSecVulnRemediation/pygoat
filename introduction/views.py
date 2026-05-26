@@ -256,7 +256,7 @@ def xxe_see(request):
 def xxe_parse(request):
 
     parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
+    parser.setFeature(feature_external_ges, False)  # Disabled external entities to prevent XXE attacks - review if XML parsing requirements change
     doc = parseString(request.body.decode('utf-8'), parser=parser)
     for event, node in doc:
         if event == START_ELEMENT and node.tagName == 'text':
