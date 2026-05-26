@@ -920,15 +920,20 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
-                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
+            file_key = request.POST.get("blog")
+            dirname = os.path.dirname(__file__)
+            allowed_files = {
+                'allowedKey1': os.path.join(dirname, 'allowed_file1.txt'),
+                'allowedKey2': os.path.join(dirname, 'allowed_file2.txt')
+                # Add additional mappings as necessary
+            }
+            if file_key in allowed_files:
+                filename = allowed_files[file_key]
+                with open(filename, "r") as f:
+                    data = f.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
+            else:
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid blog identifier provided"})
     else:
         return redirect('login')
 
