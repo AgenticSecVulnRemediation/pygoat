@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+from defusedxml.ElementTree import fromstring as secure_parse_string  # TODO: Review and update XML parsing logic to replace pulldom functionality
+from defusedxml.sax import make_parser
+
 
 import jwt
 import requests
@@ -255,18 +255,14 @@ def xxe_see(request):
 @csrf_exempt
 def xxe_parse(request):
 
-    parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
-    doc = parseString(request.body.decode('utf-8'), parser=parser)
-    for event, node in doc:
-        if event == START_ELEMENT and node.tagName == 'text':
-            doc.expandNode(node)
-            text = node.toxml()
-    startInd = text.find('>')
-    endInd = text.find('<', startInd)
-    text = text[startInd + 1:endInd:]
-    p=comments.objects.filter(id=1).update(comment=text)
-
+    # Secure XML parsing using defusedxml.ElementTree. TODO: Review and update XML parsing logic accordingly.
+    root = secure_parse_string(request.body.decode('utf-8'))
+    text = ""
+    for elem in root.iter():
+        if elem.tag == 'text':
+            text = elem.text or ""
+            break
+    p = comments.objects.filter(id=1).update(comment=text)
     return render(request, 'Lab/XXE/xxe_lab.html')
 
 def auth_home(request):
