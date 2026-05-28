@@ -27,9 +27,12 @@
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
-                html.setAttribute('data-theme', savedTheme);
+                                // Validate the theme: only allow 'light' or 'dark' to prevent XSS
+                const allowedThemes = ['light', 'dark'];
+                const safeTheme = allowedThemes.includes(savedTheme) ? savedTheme : 'light';
+                html.setAttribute('data-theme', safeTheme);
                 const themeToggle = document.querySelector('.theme-toggle');
-                themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
+                themeToggle.innerHTML = safeTheme === 'dark' ? '☀️' : '🌙';
             });
         });
     </script></body>
