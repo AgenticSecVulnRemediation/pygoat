@@ -14,7 +14,6 @@ def test_mitre_lab_17_api_rejects_invalid_hostname_input(monkeypatch):
         method = "POST"
         POST = {"ip": "127.0.0.1; cat /etc/passwd"}
 
-    # Ensure command_out is not called on invalid input
     def explode_command_out(*args, **kwargs):
         raise AssertionError("command_out should not be called for invalid ip/hostname")
 
@@ -26,8 +25,8 @@ def test_mitre_lab_17_api_rejects_invalid_hostname_input(monkeypatch):
     assert b"Invalid IP address or hostname" in resp.content
 
 
-def test_mitre_lab_17_api_calls_command_out_with_arg_list_and_shell_false(monkeypatch):
-    """The fix changes command construction to ['nmap', ip] and uses shell=False in Popen."""
+def test_mitre_lab_17_api_calls_command_out_with_arg_list(monkeypatch):
+    """The fix changes command construction to ['nmap', ip] (shell=False handled in command_out)."""
     import introduction.mitre as mitre
 
     class _Request:
@@ -38,19 +37,14 @@ def test_mitre_lab_17_api_calls_command_out_with_arg_list_and_shell_false(monkey
 
     def fake_command_out(command):
         captured["command"] = command
-        # Provide deterministic output matching the regex used in the view.
         fake_res = b"STATE SERVICE\n\n80/tcp open http\n"
         fake_err = b""
         return fake_res, fake_err
 
     monkeypatch.setattr(mitre, "command_out", fake_command_out)
 
-    # Act
     resp = mitre.mitre_lab_17_api(_Request())
 
-    # Assert
     assert captured["command"] == ["nmap", "127.0.0.1"]
     assert resp.status_code == 200
-    payload = resp.json()
-    assert "ports" in payload
-    assert payload["ports"] == ["80/tcp open http"]
+    assert resp.json()["ports"] == ["80/tcp open http"]
