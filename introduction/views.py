@@ -921,13 +921,16 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
+            normalized_file = os.path.normpath(file)
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                trusted_dir = os.path.abspath(os.path.dirname(__file__))
+                final_path = os.path.abspath(os.path.join(trusted_dir, normalized_file))
+                if not final_path.startswith(trusted_dir + os.sep):
+                    raise ValueError('Access to files outside the permitted directory is not allowed')
+                file = open(final_path, "r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
+            except (IOError, ValueError):
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
         return redirect('login')
@@ -990,8 +993,8 @@ def ssti_lab(request):
             blog = prepend_code + blog + "{% endblock %}"
             new_blog = Blogs.objects.create(author = request.user, blog_id = id)
             new_blog.save() 
-            dirname = os.path.dirname(__file__)
-            filename = os.path.join(dirname, f"templates/Lab_2021/A3_Injection/Blogs/{id}.html")
+            trusted_dir = os.path.abspath(os.path.dirname(__file__))
+            filename = os.path.join(trusted_dir, f"templates/Lab_2021/A3_Injection/Blogs/{id}.html")
             file = open(filename, "w+") 
             file.write(blog)
             file.close()
