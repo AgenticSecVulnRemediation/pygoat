@@ -14,9 +14,8 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+from defusedxml.pulldom import START_ELEMENT, parseString
+from defusedxml.sax import make_parser
 
 import jwt
 import requests
@@ -256,7 +255,10 @@ def xxe_see(request):
 def xxe_parse(request):
 
     parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
+    # Disable external general entities
+    parser.setFeature("http://xml.org/sax/features/external-general-entities", False)
+    # TODO: Review all XML parsing invocations to ensure they use the secure defusedxml API and settings
+    # TODO: Review XML parsing invocations and ensure external entities are disabled using defusedxml defaults
     doc = parseString(request.body.decode('utf-8'), parser=parser)
     for event, node in doc:
         if event == START_ELEMENT and node.tagName == 'text':
