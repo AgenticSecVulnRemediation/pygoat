@@ -27,9 +27,14 @@
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
-                html.setAttribute('data-theme', savedTheme);
+                if (savedTheme === 'dark' || savedTheme === 'light') {
+                    html.setAttribute('data-theme', savedTheme);
+                } else {
+                    html.setAttribute('data-theme', 'light'); // fallback to default
+                }
                 const themeToggle = document.querySelector('.theme-toggle');
-                themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
+                var appliedTheme = (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
+                themeToggle.innerHTML = appliedTheme === 'dark' ? '☀️' : '🌙';
             });
         });
     </script></body>
