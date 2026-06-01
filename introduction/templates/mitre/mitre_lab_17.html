@@ -39,7 +39,11 @@
                     var data = JSON.parse(result);
                     ports = data.ports;
                     for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                        /* TODO: Please confirm if this approach aligns with the project's DOM manipulation conventions */
+var span = document.createElement('span');
+span.textContent = ports[p];
+output.appendChild(span);
+output.appendChild(document.createElement('br'));}
                 })
                 .catch(
                     error => {console.log("error", error);
