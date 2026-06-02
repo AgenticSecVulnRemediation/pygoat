@@ -1,25 +1,30 @@
-/**
- * @jest-environment jsdom
- */
+// Assumptions:
+// - Jest runs with the JSDOM environment.
 
-describe('mitre_lab_17.html rendering of ports list', () => {
-  test('renders ports using textContent instead of innerHTML to prevent XSS', () => {
-    // Arrange
-    document.body.innerHTML = '<div id="output"></div>';
-    const output = document.getElementById('output');
-    const ports = ['<img src=x onerror="window.__xss=true">'];
+const fs = require('fs');
+const path = require('path');
 
-    // Act (mirror patched logic)
-    for (const p of ports) {
-      const span = document.createElement('span');
-      span.textContent = p;
-      output.appendChild(span);
-      output.appendChild(document.createElement('br'));
-    }
+function loadTemplate() {
+  // Test file is under test/, template is under introduction/templates/...
+  const templatePath = path.join(
+    __dirname,
+    '..',
+    'introduction',
+    'templates',
+    'mitre',
+    'mitre_lab_17.html'
+  );
+  return fs.readFileSync(templatePath, 'utf8');
+}
 
-    // Assert
-    expect(output.querySelector('img')).toBeNull();
-    expect(window.__xss).toBeUndefined();
-    expect(output.textContent).toContain('<img src=x onerror="window.__xss=true">');
-  });
+test('mitre_lab_17 template appends scan output using textContent (prevents HTML injection)', () => {
+  const template = loadTemplate();
+
+  // Assert the delta: no innerHTML concatenation of untrusted ports; uses createElement + textContent.
+  expect(template).toContain("document.createElement('span')");
+  expect(template).toContain('span.textContent');
+  expect(template).toContain('output.appendChild(span)');
+
+  // Ensure the previous vulnerable pattern is not present.
+  expect(template).not.toContain('output.innerHTML += "<span>"');
 });
