@@ -924,6 +924,11 @@ def ssrf_lab(request):
             try :
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, file)
+                # Validate file path to prevent directory traversal by ensuring that the file path does not escape the base directory
+                abs_path = os.path.abspath(filename)
+                base_dir = os.path.abspath(dirname)
+                if not abs_path.startswith(base_dir + os.sep):
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path"})
                 file = open(filename,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
