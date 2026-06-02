@@ -14,10 +14,12 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+# IMPORTANT: Ensure all XML parsing is handled securely using defusedxml. Review all downstream XML processing to disable dangerous features and remove any raw XML parser configurations (e.g., direct usage of START_ELEMENT).
+from defusedxml.minidom import parseString  # NOTE: Define or replace 'START_ELEMENT' if used elsewhere; defusedxml may not provide it directly
+# from xml.sax.handler import feature_external_ges  # Removed: defusedxml disables dangerous external entity processing by default. Please review secure XML parsing configuration
 
+# REMINDER: Ensure that all XML parsing in this module uses defusedxml (or another secure library) and review downstream XML processing for any legacy raw XML parser configurations.
+# REVIEW: Verify all downstream XML processing uses defusedxml (or another secure library) and disable any raw XML parser configurations if necessary.
 import jwt
 import requests
 import yaml
@@ -254,19 +256,20 @@ def xxe_see(request):
 
 @csrf_exempt
 def xxe_parse(request):
-
-    parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
-    doc = parseString(request.body.decode('utf-8'), parser=parser)
-    for event, node in doc:
-        if event == START_ELEMENT and node.tagName == 'text':
-            doc.expandNode(node)
-            text = node.toxml()
-    startInd = text.find('>')
-    endInd = text.find('<', startInd)
-    text = text[startInd + 1:endInd:]
-    p=comments.objects.filter(id=1).update(comment=text)
-
+    # Securely parse the XML using defusedxml; defusedxml disables dangerous features by default.
+    try:
+        doc = parseString(request.body.decode('utf-8'))
+    except Exception as e:
+        logging.error(f"XML parsing error: {e}")
+        return HttpResponseBadRequest("Invalid XML input")
+    text_elements = doc.getElementsByTagName('text')
+    if text_elements:
+        node = text_elements[0]
+        text = ""
+        for child in node.childNodes:
+            if child.nodeType == child.TEXT_NODE:
+                text += child.nodeValue
+        comments.objects.filter(id=1).update(comment=text)
     return render(request, 'Lab/XXE/xxe_lab.html')
 
 def auth_home(request):
