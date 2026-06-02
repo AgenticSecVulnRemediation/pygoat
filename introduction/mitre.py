@@ -1,6 +1,7 @@
 import datetime
 import re
 import subprocess
+import ipaddress
 from hashlib import md5
 
 import jwt
@@ -230,7 +231,7 @@ def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
 def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process.communicate()
     
 
@@ -238,7 +239,12 @@ def command_out(command):
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
-        command = "nmap " + ip 
+        try:
+            # Validate that the 'ip' is a valid IP address. Replace this with additional network validation as needed.
+            ipaddress.ip_address(ip)
+        except ValueError:
+            return HttpResponse('Invalid IP address provided. Please enter a valid IP.')
+        command = ["nmap", ip] 
         res, err = command_out(command)
         res = res.decode()
         err = err.decode()
