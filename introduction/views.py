@@ -15,7 +15,8 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
+# SECURITY: Using defusedxml for secure XML parsing to mitigate XML injection vulnerabilities. Please verify that secure configurations are enforced on all XML parsing calls.
+from defusedxml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
 import jwt
