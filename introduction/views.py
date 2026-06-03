@@ -20,6 +20,9 @@ from xml.sax.handler import feature_external_ges
 
 import jwt
 import requests
+from urllib.parse import urlparse
+import ipaddress
+import socket
 import yaml
 from argon2 import PasswordHasher
 from django.contrib import messages
@@ -960,6 +963,14 @@ def ssrf_lab2(request):
     elif request.method == "POST":
         url = request.POST["url"]
         try:
+            parsed = urlparse(url)
+            if parsed.scheme not in ["http", "https"]:
+                return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid URL scheme"})
+            hostname = parsed.hostname
+            ip = socket.gethostbyname(hostname)
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_loopback or ip_obj.is_private:  # Replace with additional allowed IP ranges if needed
+                return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "URL resolves to internal address"})
             response = requests.get(url)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
         except:
