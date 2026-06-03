@@ -11,6 +11,12 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import CSRF_user_tbl
 from .views import authentication_decorator
 
+def valid_ip(ip):
+    # TODO: Replace this simple IP validation logic with a robust solution
+    import re
+    pattern = r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+    return re.match(pattern, ip) is not None
+
 # import os
 
 ## Mitre top1 | CWE:787
@@ -229,8 +235,8 @@ def mitre_lab_25(request):
 def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
-def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def command_out(command_list):
+    process = subprocess.Popen(command_list, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return process.communicate()
     
 
@@ -238,8 +244,11 @@ def command_out(command):
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
-        command = "nmap " + ip 
-        res, err = command_out(command)
+        # TODO: Replace the next line with proper IP address validation
+        if not valid_ip(ip):
+            return HttpResponse('Invalid IP provided', status=400)
+        command_list = ["nmap", ip] 
+        res, err = command_out(command_list)
         res = res.decode()
         err = err.decode()
         pattern = "STATE SERVICE.*\\n\\n"
