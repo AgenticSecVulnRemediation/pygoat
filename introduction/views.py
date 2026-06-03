@@ -920,11 +920,19 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
+            file=request.POST["blog"].strip()
+            if os.path.isabs(file):
+                # TODO: update error handling with proper logging
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path"})
+            base_dir = os.path.dirname(__file__)
+            normalized_input = os.path.normpath(file)
+            full_path = os.path.join(base_dir, normalized_input)
+            resolved_path = os.path.realpath(full_path)
+            if os.path.commonpath([resolved_path, base_dir]) != base_dir:
+                # TODO: update error handling with proper logging
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path"})
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                file = open(resolved_path,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
