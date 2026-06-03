@@ -923,8 +923,15 @@ def ssrf_lab(request):
             file=request.POST["blog"]
             try :
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                normalized_file = os.path.normpath(file)  # Normalize the user-supplied file path
+                abs_base = os.path.abspath(dirname)
+                abs_path = os.path.abspath(os.path.join(dirname, normalized_file))
+                # Verify the computed path resides within the base directory
+                if not abs_path.startswith(abs_base + os.sep):
+                     # Optionally, log this event and/or raise a custom error
+                     raise Exception('Unauthorized file access: Path traversal attempt detected')
+                filename = abs_path
+                file = open(filename, "r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
