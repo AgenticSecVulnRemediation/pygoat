@@ -39,7 +39,11 @@
                     var data = JSON.parse(result);
                     ports = data.ports;
                     for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                            // Create a span element safely with textContent to prevent XSS
+    var span = document.createElement('span');
+    span.textContent = ports[p];
+    output.appendChild(span);
+    output.appendChild(document.createElement('br'));}
                 })
                 .catch(
                     error => {console.log("error", error);
