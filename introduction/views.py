@@ -923,7 +923,15 @@ def ssrf_lab(request):
             file=request.POST["blog"]
             try :
                 dirname = os.path.dirname(__file__)
+                # Validate that the user input does not contain directory traversal sequences or specify an absolute path
+                if os.path.isabs(file) or '..' in file:
+                    # Optionally return an error or a safe response (e.g., log the incident and render an error message)
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path provided."})
                 filename = os.path.join(dirname, file)
+                abs_filename = os.path.abspath(filename)
+                abs_dirname = os.path.abspath(dirname)
+                if not abs_filename.startswith(abs_dirname):
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Unauthorized file access detected."})
                 file = open(filename,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
