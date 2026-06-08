@@ -920,14 +920,22 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
+            requested_file = request.POST["blog"]
+            if os.path.isabs(requested_file) or '..' in requested_file:
+                # TODO: handle error for invalid file input to prevent path traversal
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file"})
+            try:
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
+                filename = os.path.join(dirname, requested_file)
+                final_path = os.path.abspath(filename)
+                if not final_path.startswith(os.path.abspath(dirname) + os.sep):
+                    # TODO: handle error for unauthorized file access
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file"})
+                with open(final_path, "r") as f:
+                    data = f.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
+            except Exception as e:
+                # TODO: Optionally log the error e for debugging purposes
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
         return redirect('login')
