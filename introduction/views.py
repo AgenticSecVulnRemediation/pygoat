@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+from django.utils._os import safe_join
 import pickle
 import random
 import re
@@ -921,9 +922,11 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
+            if os.path.isabs(file) or '..' in file:
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path."})
             try :
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
+                filename = safe_join(dirname, file)
                 file = open(filename,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
