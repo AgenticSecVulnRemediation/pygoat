@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
+from defusedxml.pulldom import parseString  # using defusedxml for secure XML parsing; ensure defusedxml is in project dependencies
+START_ELEMENT = 'START_ELEMENT'  # Defined to maintain compatibility; adjust XML parsing configuration as needed
 from xml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
