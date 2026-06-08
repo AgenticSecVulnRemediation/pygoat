@@ -23,7 +23,8 @@
 
         // Set theme on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const unsanitizedTheme = localStorage.getItem('theme');
+            const savedTheme = (unsanitizedTheme === 'dark' || unsanitizedTheme === 'light') ? unsanitizedTheme : 'light';
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
