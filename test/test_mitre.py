@@ -17,11 +17,10 @@ def _no_real_subprocess(monkeypatch):
     monkeypatch.setattr(subprocess, "Popen", _blocked)
 
 
-def test_mitre_lab_17_api_rejects_invalid_ip_and_does_not_invoke_subprocess(monkeypatch):
-    """Regression: input IP is validated; invalid values return 400 before building a command."""
+def test_mitre_lab_17_api_rejects_invalid_ip_and_does_not_invoke_command_out(monkeypatch):
+    """Regression: invalid IP must be rejected before any command is executed."""
     from introduction import mitre
 
-    # Arrange: make sure even if code path tries to execute, we can detect it
     called = {"count": 0}
 
     def _command_out(_cmd):
@@ -38,19 +37,16 @@ def test_mitre_lab_17_api_rejects_invalid_ip_and_does_not_invoke_subprocess(monk
             def get(_k):
                 return "1.2.3.4; rm -rf /"  # not an IP
 
-    # Act
     resp = mitre.mitre_lab_17_api(Req())
 
-    # Assert
     assert resp.status_code == 400
     assert called["count"] == 0
 
 
-def test_mitre_lab_17_api_valid_ip_calls_command_out_with_argv_and_shell_is_false(monkeypatch):
-    """Regression: command execution uses argv list and shell=False."""
+def test_mitre_lab_17_api_valid_ip_calls_command_out_with_argv_list(monkeypatch):
+    """Regression: uses argv list (no shell string concatenation)."""
     from introduction import mitre
 
-    # Arrange: capture the exact command passed to command_out
     captured = {}
 
     def _command_out(cmd):
@@ -67,9 +63,7 @@ def test_mitre_lab_17_api_valid_ip_calls_command_out_with_argv_and_shell_is_fals
             def get(_k):
                 return "127.0.0.1"
 
-    # Act
     resp = mitre.mitre_lab_17_api(Req())
 
-    # Assert
     assert resp.status_code == 200
     assert captured["cmd"] == ["nmap", "127.0.0.1"]
