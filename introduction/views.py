@@ -922,12 +922,20 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                base_dir = os.path.dirname(__file__)
+                normalized_path = os.path.normpath(file)
+                # normalized_path = os.path.normpath(urllib.parse.unquote(file))  # Uncomment and adjust if URL-encoding is expected
+                if os.path.isabs(normalized_path) or normalized_path.startswith(".."):
+                    raise ValueError('Invalid file path')
+                final_path = os.path.join(base_dir, normalized_path)
+                abs_final_path = os.path.abspath(final_path)
+                abs_base = os.path.abspath(base_dir)
+                if not abs_final_path.startswith(abs_base + os.sep):
+                    raise ValueError('Invalid file path')
+                with open(abs_final_path, "r") as file_obj:
+                    data = file_obj.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
+            except (OSError, ValueError) as e:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
         return redirect('login')
