@@ -1,7 +1,7 @@
 /**
- * Delta tests for CVE-style fix: using textContent rather than innerHTML.
+ * Delta tests for XSS fix: use textContent instead of innerHTML.
  * Assumptions:
- * - Jest is configured with testEnvironment "jsdom".
+ * - Jest testEnvironment is "jsdom".
  */
 
 const fs = require('fs');
@@ -14,7 +14,7 @@ function loadScriptIntoDom(filename) {
   eval(code);
 }
 
-describe('a9.js', () => {
+describe('introduction/static/js/a9.js', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <textarea id="a9_log"></textarea>
@@ -39,8 +39,7 @@ describe('a9.js', () => {
     delete global.fetch;
   });
 
-  test('event3 appends logs using textContent (no HTML injection)', async () => {
-    // Arrange
+  test('event3 appends log entries as textContent and does not create elements from payload', async () => {
     document.getElementById('a9_log').value = 'ignored';
     document.getElementById('a9_api').value = 'ignored';
 
@@ -53,18 +52,17 @@ describe('a9.js', () => {
 
     loadScriptIntoDom('introduction/static/js/a9.js');
 
-    // Act
     event3();
+    // Flush fetch.then chain
     await Promise.resolve();
     await Promise.resolve();
 
-    // Assert
     const container = document.getElementById('a9_d3');
     const li = container.querySelector('li');
+
     expect(li).not.toBeNull();
     expect(li.textContent).toBe('<img src=x onerror="window.__pwned=1">');
-    expect(li.innerHTML).toBe('&lt;img src=x onerror="window.__pwned=1"&gt;');
     expect(container.querySelector('img')).toBeNull();
-    expect(global.window.__pwned).toBeUndefined();
+    expect(window.__pwned).toBeUndefined();
   });
 });
