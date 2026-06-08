@@ -39,7 +39,13 @@
                     var data = JSON.parse(result);
                     ports = data.ports;
                     for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                                                // Create a new span element and set text content securely
+                        var spanEl = document.createElement('span');
+                        spanEl.textContent = ports[p];  // This safely escapes the untrusted input
+                        output.appendChild(spanEl);
+
+                        // Append a new line break element
+                        output.appendChild(document.createElement('br'));}
                 })
                 .catch(
                     error => {console.log("error", error);
