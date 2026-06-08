@@ -1,7 +1,5 @@
 const {JSDOM} = require('jsdom');
 
-// Note: this test assumes Jest environment with jsdom installed as a dependency.
-
 describe('a9.js event3 XSS hardening', () => {
   test('uses textContent so HTML in logs is not interpreted', async () => {
     const dom = new JSDOM(`<!doctype html><html><body>
@@ -23,7 +21,6 @@ describe('a9.js event3 XSS hardening', () => {
       text: () => Promise.resolve(JSON.stringify({ logs: [payload] }))
     });
 
-    // load script under test (defines global event3)
     jest.isolateModules(() => {
       require('../introduction/static/js/a9.js');
     });
@@ -32,8 +29,6 @@ describe('a9.js event3 XSS hardening', () => {
 
     const listItems = [...document.querySelectorAll('#a9_d3 li')];
     expect(listItems).toHaveLength(1);
-
-    // If innerHTML were used, an <img> would be created.
     expect(listItems[0].querySelector('img')).toBeNull();
     expect(listItems[0].textContent).toBe(payload);
     expect(global.window.__xss).toBeUndefined();
