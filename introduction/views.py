@@ -921,12 +921,18 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+            # Validate that file input does not contain traversal sequences or absolute path indicators
+            if os.path.isabs(file) or '..' in file:
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path provided."})
+            dirname = os.path.dirname(__file__)
+            filename = os.path.join(dirname, file)
+            normalized_filename = os.path.normpath(filename)
+            if not normalized_filename.startswith(os.path.normpath(dirname)):
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Unauthorized file access detected."})
+            try:
+                file = open(normalized_filename, "r")
                 data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
