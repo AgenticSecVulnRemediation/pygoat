@@ -23,13 +23,14 @@
 
         // Set theme on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme');
+            const safeTheme = (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light';
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
-                html.setAttribute('data-theme', savedTheme);
+                html.setAttribute('data-theme', safeTheme);
                 const themeToggle = document.querySelector('.theme-toggle');
-                themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
+                themeToggle.innerHTML = safeTheme === 'dark' ? '☀️' : '🌙';
             });
         });
     </script></body>
