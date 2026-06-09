@@ -56,8 +56,8 @@ function frame3to4(){
 
 
 function checkcode(){
-    var python_code = document.getElementById('python').value
-    var html_code = document.getElementById('html').value
+    var python_code = DOMPurify.sanitize(document.getElementById('python').value);
+    var html_code = DOMPurify.sanitize(document.getElementById('html').value);
 
     var formdata = new FormData();
     formdata.append('python_code', python_code);
