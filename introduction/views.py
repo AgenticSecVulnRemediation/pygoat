@@ -920,14 +920,18 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
+            blog_param = request.POST["blog"]
+            try:
+                base_path = os.path.realpath(os.path.dirname(__file__))
+                if os.path.isabs(blog_param) or ".." in blog_param:
+                    raise ValueError('Invalid file path')
+                target_path = os.path.realpath(os.path.join(base_path, blog_param))
+                if not target_path.startswith(base_path + os.sep):
+                    raise ValueError('Invalid file path')
+                with open(target_path, 'r') as f:
+                    data = f.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
+            except Exception as e:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
         return redirect('login')
@@ -990,8 +994,8 @@ def ssti_lab(request):
             blog = prepend_code + blog + "{% endblock %}"
             new_blog = Blogs.objects.create(author = request.user, blog_id = id)
             new_blog.save() 
-            dirname = os.path.dirname(__file__)
-            filename = os.path.join(dirname, f"templates/Lab_2021/A3_Injection/Blogs/{id}.html")
+            base_path = os.path.realpath(os.path.dirname(__file__))
+            filename = os.path.join(base_path, f"templates/Lab_2021/A3_Injection/Blogs/{id}.html")
             file = open(filename, "w+") 
             file.write(blog)
             file.close()
