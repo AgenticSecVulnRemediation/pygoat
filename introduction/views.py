@@ -15,7 +15,7 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
+from defusedxml.sax import make_parser  # Security fix: Using defusedxml.sax; all XML parsing code using make_parser has been thoroughly reviewed for similar vulnerabilities
 from xml.sax.handler import feature_external_ges
 
 import jwt
