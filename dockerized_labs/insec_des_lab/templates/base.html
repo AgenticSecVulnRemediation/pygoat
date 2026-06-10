@@ -27,6 +27,9 @@
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
+                const validThemes = ['light', 'dark'];
+                const savedThemeRaw = localStorage.getItem('theme');
+                const savedTheme = validThemes.includes(savedThemeRaw) ? savedThemeRaw : 'light';
                 html.setAttribute('data-theme', savedTheme);
                 const themeToggle = document.querySelector('.theme-toggle');
                 themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
