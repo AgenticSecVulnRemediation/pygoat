@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
+from defusedxml.ElementTree import fromstring  # DEVELOPER NOTE: Ensure that the new secure XML parser is tested and that all usages of the old 'parseString' have been updated accordingly
 from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+# from xml.sax.handler import feature_external_ges  # DEVELOPER NOTE: Removed insecure SAX feature import. If SAX parsing is required, ensure external entity processing is explicitly disabled using a secure configuration
 
 import jwt
 import requests
@@ -255,17 +255,16 @@ def xxe_see(request):
 @csrf_exempt
 def xxe_parse(request):
 
-    parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
-    doc = parseString(request.body.decode('utf-8'), parser=parser)
-    for event, node in doc:
-        if event == START_ELEMENT and node.tagName == 'text':
-            doc.expandNode(node)
-            text = node.toxml()
-    startInd = text.find('>')
-    endInd = text.find('<', startInd)
-    text = text[startInd + 1:endInd:]
-    p=comments.objects.filter(id=1).update(comment=text)
+    # Secure XML parsing using defusedxml.ElementTree
+    root = fromstring(request.body.decode('utf-8'))
+    # Find the first <text> element in the XML document
+    text_elem = root.find('.//text')
+    if text_elem is not None:
+        text_value = text_elem.text or ""
+    else:
+        text_value = ""
+    # Update the comment in the database; ensure that the secure parser meets application requirements
+    comments.objects.filter(id=1).update(comment=text_value)
 
     return render(request, 'Lab/XXE/xxe_lab.html')
 
