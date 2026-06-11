@@ -920,11 +920,17 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
+            file_input = request.POST["blog"]
             try :
+                # Check for absolute paths and directory traversal sequences
+                if os.path.isabs(file_input) or '..' in file_input:
+                    raise Exception('Invalid file path')  # TODO: Replace with secure error handling
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                joined_path = os.path.join(dirname, file_input)
+                normalized_path = os.path.normpath(joined_path)
+                if not normalized_path.startswith(os.path.abspath(dirname)):
+                    raise Exception('Invalid file path')  # TODO: Replace with secure error handling
+                file = open(normalized_path, "r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
