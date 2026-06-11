@@ -21,6 +21,7 @@ from xml.sax.handler import feature_external_ges
 import jwt
 import requests
 import yaml
+from yaml import safe_load
 from argon2 import PasswordHasher
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
@@ -557,7 +558,7 @@ def a9_lab(request):
             try :
                 file=request.FILES["file"]
                 try :
-                    data = yaml.load(file,yaml.Loader)
+                    data = yaml.safe_load(file)
                     
                     return render(request,"Lab/A9/a9_lab.html",{"data":data})
                 except:
