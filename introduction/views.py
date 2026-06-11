@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import os
+import urllib.parse
 import pickle
 import random
 import re
@@ -923,9 +924,12 @@ def ssrf_lab(request):
             file=request.POST["blog"]
             try :
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                decoded_input = urllib.parse.unquote(file)
+                abs_path = os.path.abspath(os.path.join(dirname, decoded_input))
+                if not abs_path.startswith(os.path.abspath(dirname) + os.sep):
+                    raise ValueError("Invalid file path")
+                f = open(abs_path,"r")
+                data = f.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
