@@ -3,9 +3,11 @@ import os
 
 def ssrf_lab(file):
     try:
-        dirname = os.path.dirname(__file__)
-        filename = os.path.join(dirname, file)
-        file = open(filename,"r")
+        base_dir = os.path.realpath(os.path.dirname(__file__))
+        canonical_path = os.path.realpath(os.path.join(base_dir, file))
+        if not canonical_path.startswith(base_dir):
+            raise Exception('Access to files outside the designated directory is not allowed')
+        file = open(canonical_path,"r")
         data = file.read()
         return {"blog":data}
     except:
