@@ -27,9 +27,12 @@
             const html = document.documentElement;
             
             requestAnimationFrame(() => {
-                html.setAttribute('data-theme', savedTheme);
+                const validThemes = ['light', 'dark'];
+                // Validate savedTheme; if invalid, default to 'light'.
+                const safeTheme = validThemes.includes(savedTheme) ? savedTheme : 'light';
+                html.setAttribute('data-theme', safeTheme);
                 const themeToggle = document.querySelector('.theme-toggle');
-                themeToggle.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
+                themeToggle.innerHTML = safeTheme === 'dark' ? '☀️' : '🌙';
             });
         });
     </script></body>
