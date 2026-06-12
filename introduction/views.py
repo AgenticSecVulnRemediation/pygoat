@@ -15,8 +15,9 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+from defusedxml.sax import make_parser  # Using defusedxml to mitigate XML injection, ensure external entities are disabled
+from defusedxml.sax.handler import feature_external_ges  # Using defusedxml to mitigate XML injection, ensure external entities are disabled
+# NOTE: Ensure defusedxml dependency (defusedxml>=0.7.1) is included in the project's dependency files (e.g., requirements.txt or setup.py)
 
 import jwt
 import requests
@@ -256,7 +257,7 @@ def xxe_see(request):
 def xxe_parse(request):
 
     parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
+    parser.setFeature(feature_external_ges, False)  # Ensure external entities are disabled
     doc = parseString(request.body.decode('utf-8'), parser=parser)
     for event, node in doc:
         if event == START_ELEMENT and node.tagName == 'text':
