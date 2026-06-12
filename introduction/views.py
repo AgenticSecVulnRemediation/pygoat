@@ -14,9 +14,10 @@ from dataclasses import dataclass
 from hashlib import md5
 from io import BytesIO
 from random import randint
-from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+from defusedxml.pulldom import START_ELEMENT, parseString
+from defusedxml.sax import make_parser
+from defusedxml.sax import feature_external_ges
+# SECURITY: All XML processing in this module must use safe defusedxml methods exclusively. Developers, please verify that any XML handling is performed using these secure methods to prevent XML injection vulnerabilities.
 
 import jwt
 import requests
