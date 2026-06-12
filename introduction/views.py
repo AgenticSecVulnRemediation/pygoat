@@ -920,13 +920,15 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
+            user_input = request.POST["blog"]
+            try:
+                base_dir = os.path.abspath(os.path.dirname(__file__))
+                resolved_path = os.path.abspath(os.path.join(base_dir, user_input))
+                if not resolved_path.startswith(base_dir + os.sep):
+                    raise ValueError('Unauthorized file access attempt detected')
+                with open(resolved_path, "r") as f:
+                    data = f.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
