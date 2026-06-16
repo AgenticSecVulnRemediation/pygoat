@@ -922,10 +922,17 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
+                safe_base = os.path.abspath(os.path.dirname(__file__))
+                # Compute the absolute path to the requested file
+                file_path = os.path.abspath(os.path.join(safe_base, file))
+                
+                # Verify that the computed file path starts with the safe base directory
+                if not file_path.startswith(safe_base + os.sep):
+                    raise Exception('Invalid file path: Potential path traversal')
+                
+                # Open the validated file
+                with open(file_path, 'r') as f:
+                    data = f.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
