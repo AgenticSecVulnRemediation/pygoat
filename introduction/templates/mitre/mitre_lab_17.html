@@ -33,13 +33,22 @@
                 headers: headers
             };
             output.innerHTML = "";
+            // escapeHTML is added to sanitize the output
+            function escapeHTML(str) {
+                return str.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/\"/g, '&quot;')
+                          .replace(/'/g, '&#039;');
+            }
+
             fetch("/mitre/17/lab/api",requestOption)
                 .then(response => response.text())
                 .then(result => {
                     var data = JSON.parse(result);
                     ports = data.ports;
                     for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                        output.innerHTML += "<span>" + escapeHTML(ports[p]) + "</span><br>";}
                 })
                 .catch(
                     error => {console.log("error", error);
