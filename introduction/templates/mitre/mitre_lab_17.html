@@ -19,14 +19,14 @@
         Details</button></div>
     
     <script>
-        var ports = [];
+        let ports = [];
         function apicall(){
-            var input = document.getElementById("input").value;
+            const input = document.getElementById("input").value;
             var output = document.getElementById("output");
-            var headers = new Headers();
-            var formdata = new FormData();
+            const headers = new Headers();
+            const formdata = new FormData();
             formdata.append("ip", input);
-            var requestOption = {
+            const requestOption = {
                 method: "POST",
                 body: formdata,
                 redirect: "follow",
@@ -36,10 +36,13 @@
             fetch("/mitre/17/lab/api",requestOption)
                 .then(response => response.text())
                 .then(result => {
-                    var data = JSON.parse(result);
+                    const data = JSON.parse(result);
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                    for (const port of data.ports){
+                        var span = document.createElement('span');
+span.textContent = port;
+output.appendChild(span);
+output.appendChild(document.createElement('br'));}
                 })
                 .catch(
                     error => {console.log("error", error);
