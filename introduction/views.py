@@ -20,6 +20,9 @@ from xml.sax.handler import feature_external_ges
 
 import jwt
 import requests
+from urllib.parse import urlparse
+
+ALLOWED_HOSTS = ['example.com', 'api.example.com']  # TODO: Replace with actual allowed hostnames
 import yaml
 from argon2 import PasswordHasher
 from django.contrib import messages
@@ -960,6 +963,9 @@ def ssrf_lab2(request):
     elif request.method == "POST":
         url = request.POST["url"]
         try:
+            parsed_url = urlparse(url)
+            if parsed_url.scheme not in ['http', 'https'] or parsed_url.hostname not in ALLOWED_HOSTS:
+                return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "URL not allowed"})
             response = requests.get(url)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
         except:
