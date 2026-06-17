@@ -920,14 +920,25 @@ def ssrf_lab(request):
         if request.method=="GET":
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
+            # Retrieve file from POST data
+            file_input = request.POST["blog"]
+            try:
+                # Determine the base directory
+                base_dir = os.path.abspath(os.path.dirname(__file__))
+                # Compute the absolute path of the requested file
+                requested_path = os.path.abspath(os.path.join(base_dir, file_input))
+                
+                # Validate that the requested path is within the base directory
+                if not requested_path.startswith(base_dir + os.path.sep):
+                    # Security check failed - reject the file access
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path."})
+                
+                # Open and read the file if the path is valid
+                with open(requested_path, "r") as file_object:
+                    data = file_object.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
+            except Exception as e:
+                # Log the exception if necessary and return a safe error message
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
         return redirect('login')
