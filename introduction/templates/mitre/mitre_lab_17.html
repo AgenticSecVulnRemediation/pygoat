@@ -19,6 +19,12 @@
         Details</button></div>
     
     <script>
+    // Add this function near the top of your script block
+    function escapeHTML(text) {
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;' };
+        return text.replace(/[&<>"'\/]/g, function(m) { return map[m]; });
+    }
+
         var ports = [];
         function apicall(){
             var input = document.getElementById("input").value;
@@ -38,8 +44,8 @@
                 .then(result => {
                     var data = JSON.parse(result);
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                    for (let p in data.ports){
+                        output.innerHTML += "<span>" + escapeHTML(ports[p]) + "</span><br>";}
                 })
                 .catch(
                     error => {console.log("error", error);
