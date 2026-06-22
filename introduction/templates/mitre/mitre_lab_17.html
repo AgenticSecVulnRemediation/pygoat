@@ -19,12 +19,12 @@
         Details</button></div>
     
     <script>
-        var ports = [];
+        let ports = [];
         function apicall(){
-            var input = document.getElementById("input").value;
-            var output = document.getElementById("output");
-            var headers = new Headers();
-            var formdata = new FormData();
+            let input = document.getElementById("input").value;
+            let output = document.getElementById("output");
+            let headers = new Headers();
+            let formdata = new FormData();
             formdata.append("ip", input);
             var requestOption = {
                 method: "POST",
@@ -38,8 +38,13 @@
                 .then(result => {
                     var data = JSON.parse(result);
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                                        // Prevent XSS by avoiding innerHTML concatenation of untrusted input
+                    for (let i = 0; i < data.ports.length; i++) {
+                        var span = document.createElement('span'); // New import not needed, using built-in DOM API
+                        span.textContent = data.ports[i]; // Use textContent for safe output
+                        output.appendChild(span);
+                        output.appendChild(document.createElement('br'));
+                    }
                 })
                 .catch(
                     error => {console.log("error", error);
