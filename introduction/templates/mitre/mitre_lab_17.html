@@ -36,10 +36,20 @@
             fetch("/mitre/17/lab/api",requestOption)
                 .then(response => response.text())
                 .then(result => {
-                    var data = JSON.parse(result);
+                    try {
+                        var data = JSON.parse(result);
+                    } catch(e) {
+                        console.error('Error parsing JSON: ', e);
+                        output.innerHTML = "error";
+                        return;
+                    }
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                    for (let p in data.ports){
+                        // Sanitize output to prevent XSS by using safe DOM manipulation
+var spanElement = document.createElement('span');
+spanElement.textContent = ports[p];
+output.appendChild(spanElement);
+output.appendChild(document.createElement('br'));}
                 })
                 .catch(
                     error => {console.log("error", error);
