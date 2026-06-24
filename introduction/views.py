@@ -922,11 +922,20 @@ def ssrf_lab(request):
         else:
             file=request.POST["blog"]
             try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
+                dirname = os.path.dirname(os.path.realpath(__file__))
+                # Construct the full file path using the user provided filename
+                target_file = os.path.realpath(os.path.join(dirname, file))
+                # Ensure the resultant path is within the intended directory
+                if not target_file.startswith(dirname + os.sep):
+                    # Optionally log the incident and inform the user with a placeholder message
+                    return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Invalid file path - access denied"})
+                
+                # Optionally add further strict validation (e.g., whitelist check or regex) here
+                
+                # Proceed with opening the validated file
+                file_handle = open(target_file, "r")
+                data = file_handle.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
