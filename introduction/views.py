@@ -15,7 +15,7 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
+from defusedxml.sax import make_parser
 from xml.sax.handler import feature_external_ges
 
 import jwt
@@ -255,9 +255,15 @@ def xxe_see(request):
 @csrf_exempt
 def xxe_parse(request):
 
+    # Secure XML parsing using defusedxml to mitigate XXE vulnerability
+    # Using defusedxml.sax for secure XML parsing to mitigate XXE vulnerabilities.
     parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
-    doc = parseString(request.body.decode('utf-8'), parser=parser)
+    parser.setFeature(feature_external_ges, False)
+    try:
+        xml_data = request.body.decode('utf-8')
+        doc = parseString(xml_data, parser=parser)
+    except Exception as e:
+        return HttpResponseBadRequest("Malformed XML input")
     for event, node in doc:
         if event == START_ELEMENT and node.tagName == 'text':
             doc.expandNode(node)
