@@ -38,13 +38,21 @@
                 .then(result => {
                     var data = JSON.parse(result);
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                    for (var i = 0; i < data.ports.length; i++) {
+                        /* Safe DOM manipulation to prevent XSS vulnerability. Create a new span element and set its textContent to the port value. Replace any placeholder values if necessary. */
+var span = document.createElement('span');
+span.textContent = ports[i];
+output.appendChild(span);
+// Append a <br> element to maintain formatting
+output.appendChild(document.createElement('br'));}
                 })
                 .catch(
-                    error => {console.log("error", error);
-                    output.innerHTML = "error";}
-                    );
+                    error => {
+                        console.log("error", error);
+                        // Safely update error message using textContent
+                        output.textContent = "error";
+                    }
+                );
         }
 
     </script>
