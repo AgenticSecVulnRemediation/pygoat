@@ -959,8 +959,13 @@ def ssrf_lab2(request):
 
     elif request.method == "POST":
         url = request.POST["url"]
+        from urllib.parse import urlparse
+        ALLOWED_DOMAINS = ['example.com']
+        parsed_url = urlparse(url)
+        if parsed_url.scheme not in ['http', 'https'] or parsed_url.netloc not in ALLOWED_DOMAINS:
+            return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid or unauthorized URL"})
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=5)
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"response": response.content.decode()})
         except:
             return render(request, "Lab/ssrf/ssrf_lab2.html", {"error": "Invalid URL"})
