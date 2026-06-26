@@ -921,12 +921,17 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
-            try :
-                dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
+            try:
+                # Securely resolve the file path
+                safe_dir = os.path.realpath(os.path.dirname(__file__))
+                normalized_input = os.path.normpath(file)
+                filepath = os.path.join(safe_dir, normalized_input)
+                if not os.path.realpath(filepath).startswith(safe_dir):
+                    # TODO: Replace exception message with proper error handling
+                    raise Exception('Unauthorized file access')
+                with open(filepath, 'r') as f:
+                    data = f.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
             except:
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
