@@ -921,9 +921,15 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
+            if '..' in file or os.path.isabs(file):
+                return render(request, 'Lab/ssrf/ssrf_lab.html', {'blog': 'Invalid file path'})
             try :
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, file)
+                full_path = os.path.abspath(filename)
+                base_path = os.path.abspath(dirname)
+                if not full_path.startswith(base_path):
+                    return render(request, 'Lab/ssrf/ssrf_lab.html', {'blog': 'Unauthorized file path access'})
                 file = open(filename,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
