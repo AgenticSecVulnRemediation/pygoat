@@ -15,8 +15,9 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
-from xml.sax.handler import feature_external_ges
+# Secure XML parser imported from defusedxml.sax to mitigate XXE vulnerabilities
+from defusedxml.sax import make_parser
+
 
 import jwt
 import requests
@@ -255,8 +256,9 @@ def xxe_see(request):
 @csrf_exempt
 def xxe_parse(request):
 
+    # Using defusedxml's make_parser; external entities are disabled by default.
     parser = make_parser()
-    parser.setFeature(feature_external_ges, True)
+    # defusedxml.sax.make_parser disables external entities by default. Developer: please verify that the parser configuration meets current security standards.
     doc = parseString(request.body.decode('utf-8'), parser=parser)
     for event, node in doc:
         if event == START_ELEMENT and node.tagName == 'text':
