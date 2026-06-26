@@ -9,6 +9,7 @@ import random
 import re
 import string
 import subprocess
+import re
 import uuid
 from dataclasses import dataclass
 from hashlib import md5
@@ -418,18 +419,20 @@ def cmd_lab(request):
             domain=request.POST.get('domain')
             # Remove all common protocols (case-insensitive) and www prefix
             domain = re.sub(r'^(?:(https?|ftp)://)?(?:www\.)?', '', domain, flags=re.IGNORECASE)
-            os=request.POST.get('os')
+            os = request.POST.get('os')
+            # Validate domain input using regex (replace placeholder pattern with appropriate one for expected domain format)
+            if not re.match(r'^[A-Za-z0-9.-]+$', domain):
+                return HttpResponse("Invalid domain", status=400)
             print(os)
-            if(os=='win'):
-                command="nslookup {}".format(domain)
+            if os == 'win':
+                command = ['nslookup', domain]
             else:
-                command = "dig {}".format(domain)
+                command = ['dig', domain]
             
             try:
                 # output=subprocess.check_output(command,shell=True,encoding="UTF-8")
                 process = subprocess.Popen(
                     command,
-                    shell=True,
                     stdout=subprocess.PIPE, 
                     stderr=subprocess.PIPE)
                 stdout, stderr = process.communicate()
