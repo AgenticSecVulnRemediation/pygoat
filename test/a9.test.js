@@ -1,58 +1,42 @@
-// Assumption: Project uses Jest with default testEnvironment "jsdom".
-// This test focuses on the security fix: using textContent instead of innerHTML when rendering logs.
+const fs = require('fs');
+const path = require('path');
 
-const buildEvent3 = () => {
-  // Mirrors the patched behavior in introduction/static/js/a9.js
-  return async function event3() {
-    const result = await fetch("/2021/discussion/A9/api", {});
-    const text = await result.text();
-    const data = JSON.parse(text);
-
-    document.getElementById("a9_d3").style.display = "flex";
-    for (let i = 0; i < data.logs.length; i++) {
-      const li = document.createElement("li");
-      li.textContent = data.logs[i];
-      document.getElementById("a9_d3").appendChild(li);
-    }
-  };
-};
-
-describe("a9.js event3 log rendering", () => {
-  beforeEach(() => {
+describe('a9.js XSS regression: uses textContent instead of innerHTML', () => {
+  test('event3 appends log entries using textContent', () => {
+    // Arrange: load the script into a jsdom environment
     document.body.innerHTML = `
-      <input id="a9_log" value="ignored" />
-      <input id="a9_api" value="ignored" />
+      <input id="a9_log" value="log" />
+      <input id="a9_api" value="api" />
+      <button id="a9_b1"></button>
+      <div id="a9_d1"></div>
+      <button id="a9_b2"></button>
+      <div id="a9_d2"></div>
       <ul id="a9_d3" style="display:none"></ul>
     `;
 
-    global.fetch = jest.fn();
-  });
-
-  afterEach(() => {
-    jest.resetAllMocks();
-  });
-
-  test("uses textContent so HTML is not interpreted (prevents DOM XSS)", async () => {
-    // Arrange
-    const payload = '<img src=x onerror="window.__xss = true">CLICK';
-    global.fetch.mockResolvedValue({
-      text: () => Promise.resolve(JSON.stringify({ logs: [payload] })),
+    // Mock fetch to return a JSON string with a payload that would execute if innerHTML were used.
+    global.fetch = jest.fn().mockResolvedValue({
+      text: () => Promise.resolve(JSON.stringify({ logs: ['<img src=x onerror="window.__xss = 1">'] })),
     });
 
-    const event3 = buildEvent3();
+    // Load module code by evaluating its content (file does not export functions)
+    const scriptPath = path.join(process.cwd(), 'introduction/static/js/a9.js');
+    const code = fs.readFileSync(scriptPath, 'utf8');
+    // eslint-disable-next-line no-eval
+    eval(code);
+
+    expect(typeof event3).toBe('function');
 
     // Act
-    await event3();
-
-    // Assert
-    const container = document.getElementById("a9_d3");
-    expect(container.children).toHaveLength(1);
-
-    const li = container.children[0];
-    // Should not create an <img> element if using textContent.
-    expect(li.querySelector("img")).toBeNull();
-    // JSDOM sets innerHTML to escaped representation when textContent is used.
-    expect(li.innerHTML).toContain("&lt;img");
-    expect(li.textContent).toBe(payload);
+    return event3().then(() => {
+      // Assert
+      const list = document.getElementById('a9_d3');
+      const li = list.querySelector('li');
+      expect(li).not.toBeNull();
+      expect(li.textContent).toBe('<img src=x onerror="window.__xss = 1">');
+      // JSDOM won't fire onerror for textContent, but this checks that it wasn't inserted as markup.
+      expect(li.innerHTML).toBe('&lt;img src=x onerror="window.__xss = 1"&gt;');
+      expect(window.__xss).toBeUndefined();
+    });
   });
 });
