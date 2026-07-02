@@ -15,7 +15,7 @@ from hashlib import md5
 from io import BytesIO
 from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
-from xml.sax import make_parser
+from defusedxml.sax import make_parser  # Ensure parser configuration disables external entity processing (e.g., feature_external_ges=False). If defusedxml is not present in dependencies, please add it to requirements.txt and verify its installation.
 from xml.sax.handler import feature_external_ges
 
 import jwt
