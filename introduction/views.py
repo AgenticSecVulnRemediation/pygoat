@@ -921,10 +921,16 @@ def ssrf_lab(request):
             return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
         else:
             file=request.POST["blog"]
+            # Validate the file path to prevent directory traversal
+            if os.path.isabs(file) or '..' in file or os.path.normpath(file).startswith('..'):
+                raise Exception('Invalid file path provided')
             try :
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, file)
-                file = open(filename,"r")
+                safe_path = os.path.abspath(filename)
+                if not safe_path.startswith(os.path.abspath(dirname)):
+                    raise Exception("Invalid file path provided")
+                file = open(safe_path,"r")
                 data = file.read()
                 return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
             except:
