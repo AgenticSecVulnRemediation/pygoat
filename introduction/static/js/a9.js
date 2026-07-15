@@ -35,10 +35,15 @@ event3 = function(){
         let data = JSON.parse(result);  // parse JSON string into object
         console.log(data.logs);
         document.getElementById("a9_d3").style.display = 'flex';
-        for (var i = 0; i < data.logs.length; i++) {
-            var li = document.createElement("li");
-            li.innerHTML = data.logs[i];
-            document.getElementById("a9_d3").appendChild(li);
+        if (data.logs && Array.isArray(data.logs)) {
+            const listContainer = document.getElementById("a9_d3");
+            const fragment = document.createDocumentFragment();
+            for (let i = 0; i < data.logs.length; i++) {
+                const li = document.createElement("li");
+                li.textContent = data.logs[i];
+                fragment.appendChild(li);
+            }
+            listContainer.appendChild(fragment);
         }
     })
     .catch(error => console.log('error', error));
