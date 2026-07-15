@@ -1,27 +1,78 @@
+import sys
+import types
 import pytest
-from django.http import HttpResponseBadRequest
 
 
 @pytest.fixture(autouse=True)
-def _mock_mitre_module_dependencies(monkeypatch):
-    """Mock all external dependencies used by introduction.mitre.
+def _mock_external_dependencies_before_import(monkeypatch):
+    """Mock Django + project-level imports used by introduction.mitre.
 
-    We mock Django + project modules to keep the test unit-scoped and deterministic.
+    This keeps the test runnable even when Django isn't installed.
     """
-    # Import inside fixture to ensure monkeypatch applies before use in tests
-    import introduction.mitre as mitre
+    # ---- Minimal fake django modules ----
+    django = types.ModuleType("django")
+    http = types.ModuleType("django.http")
+    shortcuts = types.ModuleType("django.shortcuts")
+    views = types.ModuleType("django.views")
+    views_decorators = types.ModuleType("django.views.decorators")
+    csrf = types.ModuleType("django.views.decorators.csrf")
 
-    # Ensure decorators are no-ops for unit testing
-    monkeypatch.setattr(mitre, "authentication_decorator", lambda f: f, raising=False)
+    class _Resp:
+        def __init__(self, body=None, status=200):
+            self.status_code = status
+            self.content = (body or "").encode() if isinstance(body, str) else body
 
-    # csrf_exempt decorator no-op (if imported)
-    try:
-        monkeypatch.setattr(mitre, "csrf_exempt", lambda f: f, raising=False)
-    except Exception:
-        pass
+    def HttpResponseBadRequest(body=""):
+        return _Resp(body=body, status=400)
 
-    # Avoid touching database models
-    monkeypatch.setattr(mitre, "CSRF_user_tbl", object(), raising=False)
+    def JsonResponse(data):
+        # keep it lightweight; we only need status_code
+        return _Resp(body=str(data), status=200)
+
+    def HttpResponse(body=""):
+        return _Resp(body=body, status=200)
+
+    http.HttpResponse = HttpResponse
+    http.HttpResponseBadRequest = HttpResponseBadRequest
+    http.JsonResponse = JsonResponse
+
+    def redirect(_to):
+        return _Resp(status=302)
+
+    def render(_req, _tpl, _ctx=None):
+        return _Resp(status=200)
+
+    shortcuts.redirect = redirect
+    shortcuts.render = render
+
+    csrf.csrf_exempt = lambda f: f
+
+    # Register in sys.modules so `import introduction.mitre` succeeds.
+    sys.modules.setdefault("django", django)
+    sys.modules.setdefault("django.http", http)
+    sys.modules.setdefault("django.shortcuts", shortcuts)
+    sys.modules.setdefault("django.views", views)
+    sys.modules.setdefault("django.views.decorators", views_decorators)
+    sys.modules.setdefault("django.views.decorators.csrf", csrf)
+
+    # ---- Project-level relative imports ----
+    models_mod = types.ModuleType("introduction.models")
+    views_mod = types.ModuleType("introduction.views")
+
+    # authentication_decorator should be no-op
+    views_mod.authentication_decorator = lambda f: f
+
+    class _FakeManager:
+        def filter(self, **_kwargs):
+            return []
+
+    class _FakeTbl:
+        objects = _FakeManager()
+
+    models_mod.CSRF_user_tbl = _FakeTbl
+
+    sys.modules.setdefault("introduction.models", models_mod)
+    sys.modules.setdefault("introduction.views", views_mod)
 
 
 class _FakePost:
@@ -38,14 +89,11 @@ class _FakeRequest:
         self.POST = _FakePost(post or {})
 
 
-def test_mitre_lab_17_api_with_invalid_ip_returns_400(monkeypatch):
+def test_mitre_lab_17_api_with_invalid_ip_returns_400_and_does_not_invoke_nmap(monkeypatch):
     import introduction.mitre as mitre
 
-    # Arrange: make sure nmap is never invoked for invalid input
-    called = {"value": False}
-
+    # Arrange: ensure nmap execution is never reached
     def _boom(_cmd):
-        called["value"] = True
         raise AssertionError("command_out should not be called for invalid IP")
 
     monkeypatch.setattr(mitre, "command_out", _boom, raising=True)
@@ -56,21 +104,18 @@ def test_mitre_lab_17_api_with_invalid_ip_returns_400(monkeypatch):
     resp = mitre.mitre_lab_17_api(req)
 
     # Assert
-    assert isinstance(resp, HttpResponseBadRequest)
-    assert resp.status_code == 400
-    assert called["value"] is False
+    assert getattr(resp, "status_code", None) == 400
 
 
-def test_mitre_lab_17_api_with_valid_ip_calls_command_out_with_list(monkeypatch):
+def test_mitre_lab_17_api_with_valid_ip_passes_argv_list_to_command_out(monkeypatch):
     import introduction.mitre as mitre
 
-    # Arrange
     observed = {"cmd": None}
 
     def _fake_command_out(cmd):
         observed["cmd"] = cmd
-        # Return output that satisfies the regex parsing in the view.
-        stdout = b"Some header\nSTATE SERVICE\n\n22/tcp open ssh\n"
+        # Must satisfy regex parsing: contains "STATE SERVICE\n\n" followed by at least one line.
+        stdout = b"Header\nSTATE SERVICE\n\n22/tcp open ssh\n"
         stderr = b""
         return stdout, stderr
 
@@ -78,10 +123,7 @@ def test_mitre_lab_17_api_with_valid_ip_calls_command_out_with_list(monkeypatch)
 
     req = _FakeRequest(post={"ip": "127.0.0.1"})
 
-    # Act
     resp = mitre.mitre_lab_17_api(req)
 
-    # Assert: ensure command is not a string (no shell concatenation), but argv list
     assert observed["cmd"] == ["nmap", "127.0.0.1"]
-    # JsonResponse-like object has content bytes; avoid Django test client by checking attributes defensively
     assert getattr(resp, "status_code", None) == 200
