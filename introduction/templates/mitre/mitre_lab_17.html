@@ -19,6 +19,15 @@
         Details</button></div>
     
     <script>
+// Helper function to escape HTML special characters
+function escapeHTML(text) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
+
+
         var ports = [];
         function apicall(){
             var input = document.getElementById("input").value;
@@ -39,7 +48,7 @@
                     var data = JSON.parse(result);
                     ports = data.ports;
                     for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                        output.innerHTML += "<span>" + escapeHTML(ports[p]) + "</span><br>";}
                 })
                 .catch(
                     error => {console.log("error", error);
