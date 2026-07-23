@@ -19,7 +19,16 @@
         Details</button></div>
     
     <script>
-        var ports = [];
+        // Add this helper function near the start of the script
+        function escapeHtml(unsafe) {
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        let ports = [];
         function apicall(){
             var input = document.getElementById("input").value;
             var output = document.getElementById("output");
@@ -38,8 +47,8 @@
                 .then(result => {
                     var data = JSON.parse(result);
                     ports = data.ports;
-                    for (p in data.ports){
-                        output.innerHTML += "<span>" + ports[p] + "</span><br>";}
+                    for (let p in data.ports){
+                        output.innerHTML += "<span>" + escapeHtml(ports[p]) + "</span><br>";}
                 })
                 .catch(
                     error => {console.log("error", error);
