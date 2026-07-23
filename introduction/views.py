@@ -918,19 +918,28 @@ def ssrf(request):
 def ssrf_lab(request):
     if request.user.is_authenticated:
         if request.method=="GET":
-            return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":"Read Blog About SSRF"})
+            return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "Read Blog About SSRF"})
         else:
-            file=request.POST["blog"]
-            try :
+            file_name = request.POST["blog"]
+            try:
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, file)
-                file = open(filename,"r")
-                data = file.read()
-                return render(request,"Lab/ssrf/ssrf_lab.html",{"blog":data})
-            except:
+                if os.path.isabs(file_name) or '..' in file_name:
+                    raise ValueError('Invalid file path')
+                normalized_input = os.path.normpath(file_name)
+                joined_path = os.path.join(dirname, normalized_input)
+                full_path = os.path.abspath(joined_path)
+                base_path = os.path.abspath(dirname)
+                if not full_path.startswith(base_path):
+                    raise ValueError('Invalid file path')
+                with open(full_path, "r") as file_handle:
+                    data = file_handle.read()
+                return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": data})
+            except Exception as e:
+                # Consider logging the exception e
                 return render(request, "Lab/ssrf/ssrf_lab.html", {"blog": "No blog found"})
     else:
         return redirect('login')
+
 
 def ssrf_discussion(request):
     if request.user.is_authenticated:
