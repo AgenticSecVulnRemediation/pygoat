@@ -35,9 +35,10 @@ event3 = function(){
         let data = JSON.parse(result);  // parse JSON string into object
         console.log(data.logs);
         document.getElementById("a9_d3").style.display = 'flex';
+        document.getElementById("a9_d3").innerHTML = '';
         for (var i = 0; i < data.logs.length; i++) {
             var li = document.createElement("li");
-            li.innerHTML = data.logs[i];
+            li.textContent = data.logs[i];
             document.getElementById("a9_d3").appendChild(li);
         }
     })
