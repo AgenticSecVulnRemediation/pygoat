@@ -1,5 +1,6 @@
 import datetime
 import re
+import re
 import subprocess
 from hashlib import md5
 
@@ -230,15 +231,21 @@ def mitre_lab_17(request):
     return render(request, 'mitre/mitre_lab_17.html')
 
 def command_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return process.communicate()
+    # Using shell=False to avoid OS injection vulnerabilities
+    try:
+        process = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return process.communicate()
+    except Exception as e:
+        return (b'', str(e).encode())
     
 
 @csrf_exempt
 def mitre_lab_17_api(request):
     if request.method == "POST":
         ip = request.POST.get('ip')
-        command = "nmap " + ip 
+        if not re.match(r'^(\d{1,3}\.){3}\d{1,3}$', ip):
+            return HttpResponseBadRequest('Invalid IP address')
+        command = ["nmap", ip]
         res, err = command_out(command)
         res = res.decode()
         err = err.decode()
